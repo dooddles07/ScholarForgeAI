@@ -103,6 +103,16 @@ Newest entries at the top.
 **Verified**
 - Build produces `dist/sitemap.xml` and `dist/robots.txt` correctly; no stray `dist/brand/`. Typecheck, lint, and full test suite still green (unaffected by this change).
 
+## 2026-07-30 — Go-live docs rewritten for Vercel; zero-cost launch plan complete
+
+**Done**
+- Rewrote `docs/04-OPERATIONS/DEPLOYMENT.md` from scratch: it described Cloudflare Pages, Wrangler, and Workers KV throughout, none of which apply after [ADR-0009](08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md). It also claimed a `VITE_MOCK_AI` env var and a `.env.example` that never existed — `src/ai/client.ts` has always used a hardcoded `IS_MOCK_MODE = true`, no env var involved.
+- New structure: a "Deploying today" section that gets the actual, working app (real parsing, real storage, real spaced repetition, mock-generated content) live on Vercel for $0 right now, and a separate "Turning on real AI generation" section that honestly describes this as *not built yet* and lays out the exact steps for later (Gemini key, Upstash Redis for quota instead of Workers KV, `api/generate.ts`, flipping `IS_MOCK_MODE`).
+- This closes out the full audit-and-build pass: every phase from the original plan (deploy target, missing file formats, real retrieval, offline support, exports, streak, dependency cleanup, UI/motion polish, SEO basics, go-live docs) is done. The one deliberately unbuilt piece — the real AI proxy — was held back by explicit choice, not oversight, and is fully specified for whenever it's picked up.
+
+**Verified**
+- Typecheck, lint, full test suite (34 tests), and build all green. This was also a final end-to-end check of everything built across the session.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**
