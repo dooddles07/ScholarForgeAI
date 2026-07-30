@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import * as Accordion from '@radix-ui/react-accordion';
 import { ChevronRight } from 'lucide-react';
 import type { OutlineNode } from '@/domain/types';
-import { cn } from '@/lib/utils';
 import { documentHub } from '@/copy/labels';
 
 interface TopicOutlineProps {
@@ -34,48 +33,49 @@ export function TopicOutline({ nodes, hasRealOutline, className }: TopicOutlineP
 }
 
 function OutlineRow({ node, depth }: { node: OutlineNode; depth: number }) {
-  const [open, setOpen] = useState(false);
   const hasChildren = node.children.length > 0;
+
+  if (!hasChildren) {
+    return (
+      <li>
+        <div
+          className="flex min-h-11 flex-1 items-center gap-2 py-2 pr-3 text-base text-fg"
+          style={{ paddingLeft: `${depth * 1.25 + 1.5}rem` }}
+        >
+          <span className="flex-1">{node.title}</span>
+          <span className="font-mono text-xs tabular text-fg-muted">p. {node.pageStart}</span>
+        </div>
+      </li>
+    );
+  }
 
   return (
     <li>
-      <div className="flex items-center">
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            className="flex min-h-11 flex-1 items-center gap-2 py-2 pr-3 text-left text-base text-fg"
-            style={{ paddingLeft: `${depth * 1.25}rem` }}
-          >
-            <ChevronRight
-              aria-hidden
-              className={cn(
-                'size-4 shrink-0 text-fg-subtle transition-transform duration-[--duration-fast]',
-                open && 'rotate-90',
-              )}
-            />
-            <span className="flex-1">{node.title}</span>
-            <span className="font-mono text-xs tabular text-fg-muted">p. {node.pageStart}</span>
-          </button>
-        ) : (
-          <div
-            className="flex min-h-11 flex-1 items-center gap-2 py-2 pr-3 text-base text-fg"
-            style={{ paddingLeft: `${depth * 1.25 + 1.5}rem` }}
-          >
-            <span className="flex-1">{node.title}</span>
-            <span className="font-mono text-xs tabular text-fg-muted">p. {node.pageStart}</span>
-          </div>
-        )}
-      </div>
+      <Accordion.Root type="single" collapsible>
+        <Accordion.Item value={node.id}>
+          <Accordion.Header>
+            <Accordion.Trigger
+              className="group flex min-h-11 w-full items-center gap-2 py-2 pr-3 text-left text-base text-fg"
+              style={{ paddingLeft: `${depth * 1.25}rem` }}
+            >
+              <ChevronRight
+                aria-hidden
+                className="size-4 shrink-0 text-fg-subtle transition-transform duration-[--duration-fast] group-data-[state=open]:rotate-90"
+              />
+              <span className="flex-1">{node.title}</span>
+              <span className="font-mono text-xs tabular text-fg-muted">p. {node.pageStart}</span>
+            </Accordion.Trigger>
+          </Accordion.Header>
 
-      {hasChildren && open && (
-        <ul className="divide-y divide-line border-t border-line">
-          {node.children.map((child) => (
-            <OutlineRow key={child.id} node={child} depth={depth + 1} />
-          ))}
-        </ul>
-      )}
+          <Accordion.Content className="accordion-content overflow-hidden">
+            <ul className="divide-y divide-line border-t border-line">
+              {node.children.map((child) => (
+                <OutlineRow key={child.id} node={child} depth={depth + 1} />
+              ))}
+            </ul>
+          </Accordion.Content>
+        </Accordion.Item>
+      </Accordion.Root>
     </li>
   );
 }

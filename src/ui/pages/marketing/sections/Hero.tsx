@@ -15,7 +15,7 @@ export function Hero({ onFile }: HeroProps) {
           Sized so the drop zone clears the fold on a 320x568 screen. It is the point of the
           page; anything above it is earning its height.
         */}
-        <div className="lg:col-span-7">
+        <div className="motion-enter lg:col-span-7">
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-mark">{hero.eyebrow}</p>
 
           <h1 className="display mt-3 text-[2.25rem] text-ink-fg sm:mt-5 sm:text-6xl lg:text-[4.25rem]">

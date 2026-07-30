@@ -152,3 +152,169 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Card flip: the one animation with a real job. Reduces to a crossfade under reduced motion. */
+.flashcard-scene {
+  perspective: 1200px;
+}
+
+.flashcard-flip {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform var(--duration-slow) var(--ease);
+}
+
+.flashcard-flip[data-flipped='true'] {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  backface-visibility: hidden;
+}
+
+.flashcard-face-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flashcard-flip {
+    transform: none !important;
+  }
+
+  .flashcard-face {
+    transition: opacity var(--duration) var(--ease);
+  }
+
+  .flashcard-face-front {
+    opacity: 1;
+  }
+
+  .flashcard-flip[data-flipped='true'] .flashcard-face-front {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .flashcard-face-back {
+    transform: none;
+    opacity: 0;
+  }
+
+  .flashcard-flip[data-flipped='true'] .flashcard-face-back {
+    opacity: 1;
+  }
+}
+
+/* Shared entrance for moments that just changed: feedback reveal, chat turns. */
+@keyframes motion-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.motion-enter {
+  animation: motion-enter var(--duration) var(--ease) both;
+}
+
+/* Radix Dialog: overlay fades, content rises. data-state drives direction; Radix detects the
+   animation end itself to unmount on close, so no JS timing is needed here. */
+@keyframes dialog-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-content-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialog-content-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.98);
+  }
+}
+
+.dialog-overlay {
+  animation-duration: var(--duration);
+  animation-timing-function: var(--ease);
+  animation-fill-mode: both;
+}
+
+.dialog-overlay[data-state='open'] {
+  animation-name: dialog-overlay-in;
+}
+
+.dialog-overlay[data-state='closed'] {
+  animation-name: dialog-overlay-out;
+}
+
+.dialog-content {
+  animation-duration: var(--duration-slow);
+  animation-timing-function: var(--ease);
+  animation-fill-mode: both;
+}
+
+.dialog-content[data-state='open'] {
+  animation-name: dialog-content-in;
+}
+
+.dialog-content[data-state='closed'] {
+  animation-name: dialog-content-out;
+}
+
+/* Radix Accordion: height reads from the var Radix computes on the trigger element. */
+@keyframes accordion-open {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-close {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.accordion-content[data-state='open'] {
+  animation: accordion-open var(--duration-slow) var(--ease);
+}
+
+.accordion-content[data-state='closed'] {
+  animation: accordion-close var(--duration-slow) var(--ease);
+}

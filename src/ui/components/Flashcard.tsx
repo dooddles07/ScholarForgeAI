@@ -50,15 +50,28 @@ export function Flashcard({ card, onRate }: { card: Card; onRate: (rating: Ratin
         type="button"
         onClick={() => setFlipped((v) => !v)}
         aria-label={flipped ? 'Show the question' : flashcards.flip}
-        className={cn(
-          'flex min-h-56 w-full cursor-pointer items-center justify-center rounded-lg border px-6 py-10 text-center',
-          'border-line bg-surface transition-colors duration-[--duration]',
-          'hover:border-accent/50 sm:min-h-64',
-        )}
+        className="flashcard-scene block min-h-56 w-full sm:min-h-64"
       >
-        <p className="measure text-xl leading-snug text-fg sm:text-2xl">
-          {flipped ? card.back : card.front}
-        </p>
+        <div className="flashcard-flip h-full min-h-56 w-full sm:min-h-64" data-flipped={flipped}>
+          <div
+            className={cn(
+              'flashcard-face flashcard-face-front flex min-h-56 w-full cursor-pointer items-center justify-center rounded-lg border px-6 py-10 text-center',
+              'border-line bg-surface transition-colors duration-[--duration]',
+              'hover:border-accent/50 sm:min-h-64',
+            )}
+          >
+            <p className="measure text-xl leading-snug text-fg sm:text-2xl">{card.front}</p>
+          </div>
+          <div
+            className={cn(
+              'flashcard-face flashcard-face-back flex min-h-56 w-full cursor-pointer items-center justify-center rounded-lg border px-6 py-10 text-center',
+              'border-line bg-surface transition-colors duration-[--duration]',
+              'hover:border-accent/50 sm:min-h-64',
+            )}
+          >
+            <p className="measure text-xl leading-snug text-fg sm:text-2xl">{card.back}</p>
+          </div>
+        </div>
       </button>
 
       {flipped ? (

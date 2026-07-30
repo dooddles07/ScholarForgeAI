@@ -17,16 +17,22 @@ export function OfflineBanner() {
     };
   }, []);
 
-  if (!isOffline) return null;
-
   return (
     <div
-      role="status"
-      aria-live="polite"
-      className="flex items-start gap-2 border-b border-line bg-surface px-4 py-2.5 text-sm text-fg-muted"
+      className={`grid transition-[grid-template-rows] duration-[--duration-slow] ease-[--ease] ${
+        isOffline ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+      }`}
     >
-      <CloudOff aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
-      <p>{offline.banner}</p>
+      <div className="overflow-hidden">
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-start gap-2 border-b border-line bg-surface px-4 py-2.5 text-sm text-fg-muted"
+        >
+          <CloudOff aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+          <p>{offline.banner}</p>
+        </div>
+      </div>
     </div>
   );
 }

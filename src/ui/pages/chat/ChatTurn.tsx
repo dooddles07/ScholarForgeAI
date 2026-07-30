@@ -38,7 +38,7 @@ export function ChatTurn({ message, onSaveCard }: ChatTurnProps) {
   }
 
   return (
-    <div>
+    <div className="motion-enter">
       <p className="measure text-base leading-relaxed text-fg">{withCitations(message.content)}</p>
 
       {message.citations.length > 0 && (
@@ -58,7 +58,13 @@ export function ChatTurn({ message, onSaveCard }: ChatTurnProps) {
             disabled={saved}
             className="min-h-11 text-base text-accent underline disabled:text-fg-muted disabled:no-underline"
           >
-            {saved ? chat.saved : chat.saveAsCard}
+            <span
+              key={saved ? 'saved' : 'save'}
+              className="motion-enter inline-block"
+              style={{ animationDuration: 'var(--duration-fast)' }}
+            >
+              {saved ? chat.saved : chat.saveAsCard}
+            </span>
           </button>
         </div>
       )}

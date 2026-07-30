@@ -20,7 +20,7 @@ export function Section({
 }: SectionProps) {
   return (
     <section id={id} className={cn('border-t border-ink-line/70 py-20 lg:py-28', className)}>
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <div className="reveal-up mx-auto max-w-6xl px-5 sm:px-8">
         {eyebrow && (
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-mark">{eyebrow}</p>
         )}

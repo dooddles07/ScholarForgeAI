@@ -2,7 +2,7 @@ import { Check, Highlighter, Volume2 } from 'lucide-react';
 
 /* Real artifacts at small scale, so the section shows the output instead of describing it. */
 
-const shell = 'rounded-md border border-ink-line bg-ink-raised p-5';
+const shell = 'reveal-up rounded-md border border-ink-line bg-ink-raised p-5';
 const cite = 'mt-3 flex items-center gap-1.5 font-mono text-xs tabular text-mark';
 
 export function QuizSample() {
@@ -83,7 +83,7 @@ export function ExplanationSample() {
 
 export function ExamSample() {
   return (
-    <div className="paper-sheet rounded-md shadow-lg">
+    <div className="reveal-up paper-sheet rounded-md shadow-lg">
       <p className="paper-sheet__header px-5 py-2.5 font-mono text-[0.65rem] uppercase tracking-widest text-paper-muted">
         Cellular Respiration &middot; 45 minutes &middot; 25 questions
       </p>

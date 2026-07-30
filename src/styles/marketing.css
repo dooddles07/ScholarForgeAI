@@ -53,6 +53,40 @@
   }
 }
 
+/* Section content settles up into place as it enters view. Restrained: small offset, once each. */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.reveal-up {
+  animation: reveal-up 700ms var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 0% cover 30%;
+}
+
+@supports not (animation-timeline: view()) {
+  .reveal-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /*
  * Paper: warm rather than white, with a single rule under the file header. Ruled lines behind
  * the whole block were tried and cut; they never align with mixed leading and read as a table.

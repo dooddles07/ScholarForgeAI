@@ -35,7 +35,7 @@ export function AnswerFeedback({
       <p
         role="status"
         className={cn(
-          'flex items-center gap-2 text-xl font-semibold',
+          'motion-enter flex items-center gap-2 text-xl font-semibold',
           isCorrect === true && 'text-correct',
           isCorrect === false && 'text-incorrect',
           isCorrect === null && 'text-fg-muted',

@@ -8,7 +8,7 @@ interface ClosingProps {
 export function Closing({ onFile }: ClosingProps) {
   return (
     <section className="border-t border-ink-line/70 py-20 lg:py-28">
-      <div className="mx-auto max-w-2xl px-5 text-center sm:px-8">
+      <div className="reveal-up mx-auto max-w-2xl px-5 text-center sm:px-8">
         <h2 className="display text-4xl text-ink-fg sm:text-5xl">{closing.heading}</h2>
         <p className="mx-auto mt-4 max-w-md text-lg text-ink-muted">{closing.body}</p>
 

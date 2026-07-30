@@ -1,3 +1,4 @@
+import * as SwitchPrimitive from '@radix-ui/react-switch';
 import type { ReactNode } from 'react';
 import { useAppearance, useSettings } from '@/hooks/use-settings';
 import { PageHeader } from '@/ui/components/PageHeader';
@@ -114,21 +115,13 @@ function Toggle({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
+    <SwitchPrimitive.Root
+      checked={checked}
+      onCheckedChange={onChange}
       aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 shrink-0 cursor-pointer rounded-full transition-colors duration-[--duration-fast] ${
-        checked ? 'bg-accent' : 'bg-line'
-      }`}
+      className="inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full bg-line transition-colors duration-[--duration-fast] data-[state=checked]:bg-accent"
     >
-      <span
-        className={`absolute top-1 size-5 rounded-full bg-white transition-[left] duration-[--duration-fast] ${
-          checked ? 'left-6' : 'left-1'
-        }`}
-      />
-    </button>
+      <SwitchPrimitive.Thumb className="block size-5 translate-x-1 rounded-full bg-white transition-transform duration-[--duration-fast] data-[state=checked]:translate-x-6" />
+    </SwitchPrimitive.Root>
   );
 }

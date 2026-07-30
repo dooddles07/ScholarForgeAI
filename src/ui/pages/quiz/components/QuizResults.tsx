@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import type { QuizScore } from '@/domain/quiz/scoring';
 import { duration } from '@/lib/format';
@@ -23,6 +24,16 @@ export function QuizResults({
   cardsMade,
 }: QuizResultsProps) {
   const missedCount = score.missedQuestionIds.length;
+
+  /* Bars start at 0 and fill on mount; two rAFs let the 0% state paint first. */
+  const [barsFilled, setBarsFilled] = useState(false);
+  useEffect(() => {
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => setBarsFilled(true));
+      return () => cancelAnimationFrame(raf2);
+    });
+    return () => cancelAnimationFrame(raf1);
+  }, []);
 
   return (
     <div className="mx-auto max-w-xl">
@@ -52,8 +63,8 @@ export function QuizResults({
                 </div>
                 <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-surface">
                   <div
-                    className="h-full rounded-full bg-accent"
-                    style={{ width: `${topic.percent}%` }}
+                    className="h-full rounded-full bg-accent transition-[width] duration-[--duration-slow] ease-[--ease]"
+                    style={{ width: barsFilled ? `${topic.percent}%` : '0%' }}
                   />
                 </div>
               </li>
