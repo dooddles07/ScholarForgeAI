@@ -53,6 +53,20 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (27 tests), and build all green. Initial bundle unchanged at ~87 KB gzipped.
 
+## 2026-07-30 — Streak mechanic
+
+**Done**
+- `src/domain/streak/streak.ts`: pure `recordStudyDay` function implementing the rule already implied by the existing copy (`streak.active`/`graceUsed`/`broken` in `copy/labels.ts`) and the existing `Settings` fields (`streakCount`, `streakLastDay`, `streakGraceUsed`) — both were already in place but nothing ever updated them. One missed day is forgiven once per streak; a second miss, or missing more than one day, resets it to 1.
+- `src/hooks/use-streak.ts` (`useRecordStudyDay`): reads settings fresh and writes the update, called from `useRateCard` (flashcard rating) and `useQuizSession`'s `answer` callback (quiz question answered) — the two study actions that are actually wired up end to end today.
+- The dashboard's streak stat (`DashboardPage.tsx`) already read `settings.streakCount`; it now reflects real activity instead of always showing 0.
+- 7 unit tests in `streak.test.ts` covering same-day no-op, normal continuation, the one-day grace, breaking after the grace is spent, and breaking after a longer gap.
+
+**Note for later**
+- `saveAttempt` (`src/persistence/study.ts`) is defined but never called from the quiz or exam flow, so quiz/exam completions do not currently feed the dashboard's accuracy trend or weak-topics view, and are not counted toward the streak either. Not fixed here — it is a separate, pre-existing gap in the quiz/exam completion flow, not part of the streak mechanic itself.
+
+**Verified**
+- Typecheck, lint, full test suite (34 tests), and build all green.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**

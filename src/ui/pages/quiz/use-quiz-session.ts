@@ -4,11 +4,13 @@ import { checkAnswer } from '@/domain/quiz/answer-matching';
 import { scoreQuiz, type QuizScore } from '@/domain/quiz/scoring';
 import { shuffleOptions } from '@/domain/quiz/shuffle';
 import { useGenerateQuestions } from '@/hooks/use-generation';
+import { useRecordStudyDay } from '@/hooks/use-streak';
 
 export type Phase = 'config' | 'generating' | 'question' | 'results';
 
 export function useQuizSession(doc: StoredDocument | undefined) {
   const generateQuestions = useGenerateQuestions();
+  const recordStudyDay = useRecordStudyDay();
   const [phase, setPhase] = useState<Phase>('config');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
@@ -55,8 +57,9 @@ export function useQuizSession(doc: StoredDocument | undefined) {
           timeSpentMs: Date.now() - questionStartedAt.current,
         },
       ]);
+      void recordStudyDay();
     },
-    [index, questions],
+    [index, questions, recordStudyDay],
   );
 
   const next = useCallback(() => {
