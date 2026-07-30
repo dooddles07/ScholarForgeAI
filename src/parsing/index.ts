@@ -4,6 +4,9 @@ import { pageRangeOutline } from '@/domain/text/outline';
 import { checkFile } from '@/domain/validation/file-check';
 import { parsePdf, PdfScanError } from './formats/pdf';
 import { parseText } from './formats/text';
+import { parseDocx } from './formats/docx';
+import { parsePptx } from './formats/pptx';
+import { parseEpub } from './formats/epub';
 
 export type ParseStage = 'reading' | 'extracting' | 'checking' | 'structure' | 'finishing';
 
@@ -65,8 +68,22 @@ export async function parseFile(
       const result = await parseText(file);
       pages = result.pages;
       pageCount = result.pageCount;
+    } else if (check.format === 'docx') {
+      const result = await parseDocx(file);
+      pages = result.pages;
+      pageCount = result.pageCount;
+      title = result.title;
+    } else if (check.format === 'pptx') {
+      const result = await parsePptx(file);
+      pages = result.pages;
+      pageCount = result.pageCount;
+      title = result.title;
+    } else if (check.format === 'epub') {
+      const result = await parseEpub(file);
+      pages = result.pages;
+      pageCount = result.pageCount;
+      title = result.title;
     } else {
-      /* pptx, docx, and epub are Milestone 7. Saying so beats a silent failure. */
       throw new ParseError('unsupported');
     }
   } catch (error) {

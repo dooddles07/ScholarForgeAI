@@ -1,6 +1,6 @@
 # ADR-0003 — Host on Cloudflare Pages rather than Vercel
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0009](ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md)
 **Date:** 2026-07-30
 
 ## Context

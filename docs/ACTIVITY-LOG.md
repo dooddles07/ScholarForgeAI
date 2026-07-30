@@ -7,6 +7,16 @@ Newest entries at the top.
 
 ---
 
+## 2026-07-30 — Deploy target switched to Vercel; PPTX/DOCX/EPUB parsing built
+
+**Done**
+- Switched deploy target from Cloudflare Pages to Vercel. `vercel.json` now carries the security headers previously in `public/_headers` (removed, along with `public/_redirects`, since Vercel doesn't read Cloudflare-style config files). See [ADR-0009](08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md), which supersedes [ADR-0003](08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md).
+- Built real `.pptx`, `.docx`, and `.epub` parsing per [ADR-0005](08-DECISIONS/ADR-0005-CLIENT-SIDE-PARSING.md): `src/parsing/formats/pptx.ts` (jszip, slide XML), `docx.ts` (mammoth), `epub.ts` (jszip, container/OPF/spine reader). Wired into `src/parsing/index.ts`, replacing the "Milestone 7" placeholder that threw `unsupported` for these formats.
+- Unit tests for pptx and epub parsers using in-memory zip fixtures (`pptx.test.ts`, `epub.test.ts`) — 6 new tests, all passing. No docx test yet; fabricating a real docx binary for mammoth needs a more involved fixture.
+
+**Verified**
+- Typecheck, lint, full test suite (15 tests), and build all green.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**
