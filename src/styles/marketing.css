@@ -87,6 +87,25 @@
   }
 }
 
+/* Primary marketing CTAs lift slightly on hover, echoing the accent-hover fill already used
+   for buttons elsewhere but with a touch more weight since these are the conversion points. */
+.cta-lift {
+  transition:
+    transform var(--duration-fast) var(--ease),
+    box-shadow var(--duration-fast) var(--ease);
+}
+
+.cta-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px -4px oklch(0% 0 0 / 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-lift:hover {
+    transform: none;
+  }
+}
+
 /*
  * Paper: warm rather than white, with a single rule under the file header. Ruled lines behind
  * the whole block were tried and cut; they never align with mixed leading and read as a table.

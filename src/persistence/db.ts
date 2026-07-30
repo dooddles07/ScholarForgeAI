@@ -44,7 +44,7 @@ db.version(1).stores({
 
 export const DEFAULT_SETTINGS: Settings = {
   id: 'singleton',
-  theme: 'system',
+  theme: 'dark',
   readingMode: false,
   reduceMotion: 'system',
   dailyCardLimit: 20,

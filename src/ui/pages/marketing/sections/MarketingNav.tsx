@@ -27,7 +27,7 @@ export function MarketingNav() {
 
         <Link
           to="/app/library"
-          className="flex min-h-11 items-center rounded-md border border-ink-line px-4 text-sm font-medium text-ink-fg transition-colors duration-[--duration-fast] hover:bg-ink-raised"
+          className="cta-lift flex min-h-11 items-center rounded-md border border-ink-line px-4 text-sm font-medium text-ink-fg transition-colors duration-[--duration-fast] hover:bg-ink-raised"
         >
           {nav.openApp}
         </Link>

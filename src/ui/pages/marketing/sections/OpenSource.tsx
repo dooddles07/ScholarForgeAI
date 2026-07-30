@@ -19,7 +19,7 @@ export function OpenSource() {
       <div className="mt-8 flex flex-wrap gap-3">
         <a
           href={REPO_URL}
-          className="inline-flex min-h-11 items-center gap-2 rounded-md bg-mark px-5 py-2.5 font-medium text-ink transition-opacity duration-[--duration-fast] hover:opacity-90"
+          className="cta-lift inline-flex min-h-11 items-center gap-2 rounded-md bg-mark px-5 py-2.5 font-medium text-ink transition-opacity duration-[--duration-fast] hover:opacity-90"
         >
           {openSource.primaryCta}
           <ArrowUpRight aria-hidden className="size-4" />
