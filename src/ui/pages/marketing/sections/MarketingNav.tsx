@@ -5,7 +5,8 @@ export function MarketingNav() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-line/70 bg-ink/85 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
-        <Link to="/" className="text-base font-semibold tracking-tight text-ink-fg">
+        <Link to="/" className="flex items-center text-base font-semibold tracking-tight text-ink-fg">
+          <img src="/brand/logo-icon-transparent.png" alt="" className="mr-2 h-6 w-6" />
           ScholarForge
           <span className="ml-1.5 font-mono text-xs text-mark">AI</span>
         </Link>
