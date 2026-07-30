@@ -1,7 +1,9 @@
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import type { ReactNode } from 'react';
 import { useAppearance, useSettings } from '@/hooks/use-settings';
+import { useExportBackup, useImportBackup } from '@/hooks/use-backup';
 import { PageHeader } from '@/ui/components/PageHeader';
+import { Button } from '@/ui/components/primitives/Button';
 import { nav, settings as copy } from '@/copy/labels';
 import { ApiKeyField } from './ApiKeyField';
 import { DangerZone } from './DangerZone';
@@ -9,6 +11,8 @@ import { DangerZone } from './DangerZone';
 export default function SettingsPage() {
   useAppearance();
   const { settings, update } = useSettings();
+  const exportBackup = useExportBackup();
+  const { status: importStatus, inputRef, trigger: triggerImport, handleFile } = useImportBackup();
 
   return (
     <>
@@ -62,6 +66,35 @@ export default function SettingsPage() {
           </Group>
 
           <Group title={copy.yourData}>
+            <div className="flex flex-wrap items-center gap-2 p-4">
+              <Button variant="secondary" onClick={() => void exportBackup()}>
+                {copy.exportAll}
+              </Button>
+              <Button variant="secondary" onClick={triggerImport}>
+                {copy.importPack}
+              </Button>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="application/json"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void handleFile(file);
+                  e.target.value = '';
+                }}
+              />
+              {importStatus === 'success' && (
+                <p role="status" className="w-full text-sm text-fg-muted">
+                  {copy.importSuccess}
+                </p>
+              )}
+              {importStatus === 'error' && (
+                <p role="alert" className="w-full text-sm text-incorrect">
+                  {copy.importError}
+                </p>
+              )}
+            </div>
             <DangerZone />
           </Group>
 

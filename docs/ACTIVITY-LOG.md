@@ -41,6 +41,18 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (20 tests), and build all green. `dist/sw.js` and `dist/manifest.webmanifest` generate correctly; `dist/` stays gitignored.
 
+## 2026-07-30 — Export: backup file, Anki/Quizlet CSV
+
+**Done**
+- Whole-app JSON backup: `src/domain/export/backup.ts` (payload shape, `isBackupPayload` type guard), `src/persistence/backup.ts` (`exportBackup`/`importBackup`, restore is a merge via `bulkPut`, never destructive). Settings (including the user's own API key) are deliberately excluded from the backup file, since a backup is meant to move between devices or be shared.
+- Wired into Settings under "Your data" (`SettingsPage.tsx`, `src/hooks/use-backup.ts`): download a backup, or restore one from a file picker, with a status message on success or a bad file.
+- Anki/Quizlet CSV export: `src/domain/export/csv.ts` (generic CSV builder with proper quoting) and `deck-export.ts` (`buildCardsCsv`, front/back, no header — both destinations import the same plain CSV with no app-specific format). Wired into the flashcards page as two buttons next to a deck once it has cards.
+- `src/lib/download.ts`: shared client-side file-download helper (Blob + temporary anchor), used by both the backup and CSV exports.
+- 7 new unit tests across `deck-export.test.ts` and `backup.test.ts`.
+
+**Verified**
+- Typecheck, lint, full test suite (27 tests), and build all green. Initial bundle unchanged at ~87 KB gzipped.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**
