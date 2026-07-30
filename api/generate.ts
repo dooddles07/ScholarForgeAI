@@ -1,5 +1,5 @@
-import { isAllowedOrigin, clientIp, hashIp } from './_lib/security';
-import { checkAndConsumeQuota } from './_lib/quota';
+import { isAllowedOrigin, clientIp, hashIp } from './_lib/security.js';
+import { checkAndConsumeQuota } from './_lib/quota.js';
 import {
   callGemini,
   GeminiError,
@@ -8,7 +8,7 @@ import {
   type RawCardItem,
   type RawChatResult,
   type RawQuestionItem,
-} from './_lib/gemini';
+} from './_lib/gemini.js';
 
 export const config = { runtime: 'edge' };
 
