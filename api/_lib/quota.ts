@@ -3,9 +3,15 @@ import { Redis } from '@upstash/redis';
 const DAY_SECONDS = 60 * 60 * 24;
 const TTL_SECONDS = DAY_SECONDS * 2; // 48 hours, per RATE-LIMITING-AND-ABUSE.md
 
-export type QuotaResult =
-  | { ok: true }
-  | { ok: false; reason: 'SERVICE_DISABLED' | 'QUOTA_EXCEEDED' | 'SERVICE_UNAVAILABLE' };
+export type QuotaReason = 'OK' | 'SERVICE_DISABLED' | 'QUOTA_EXCEEDED' | 'SERVICE_UNAVAILABLE';
+
+/* Flat shape rather than a discriminated union on `ok: true | false`: Vercel typechecks this
+   folder with its own non-strict config, where boolean literal types widen and narrowing on
+   `!quota.ok` stops working. `reason` always present keeps it valid under either setting. */
+export interface QuotaResult {
+  ok: boolean;
+  reason: QuotaReason;
+}
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -46,7 +52,7 @@ export async function checkAndConsumeQuota(ipHash: string): Promise<QuotaResult>
       return { ok: false, reason: 'QUOTA_EXCEEDED' };
     }
 
-    return { ok: true };
+    return { ok: true, reason: 'OK' };
   } catch {
     return { ok: false, reason: 'SERVICE_UNAVAILABLE' };
   }

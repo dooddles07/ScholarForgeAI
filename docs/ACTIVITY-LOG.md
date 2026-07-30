@@ -113,6 +113,18 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (34 tests), and build all green. This was also a final end-to-end check of everything built across the session.
 
+## 2026-07-30 — Post-deploy fixes: Vercel function typecheck, CSP, colour contrast
+
+**Done**
+- **Vercel function typecheck** (`api/_lib/quota.ts`): `QuotaResult` was a discriminated union on `ok: true | false`. Vercel typechecks `api/` with its own config, which is not strict, and without `strictNullChecks` those boolean literal types widen so `if (!quota.ok)` stops narrowing — `error TS2339: Property 'reason' does not exist on type 'QuotaResult'`. Replaced with a flat `{ ok: boolean; reason: QuotaReason }` (added an `'OK'` reason) so it type-checks under either strictness. Verified by compiling `api/generate.ts` with non-strict flags matching Vercel.
+- **CSP blocking the theme script**: the inline anti-flash script was allowlisted by a `sha256-` hash in `vercel.json`. The hash is computed over exact bytes, so a Windows checkout and Vercel's Linux build disagree on line endings and the hash never matches in production — the script was blocked on every page load. Moved it to `public/theme-init.js` and dropped the hash; `script-src 'self'` covers a same-origin file and there is nothing left to keep in sync. Also removed `https://generativelanguage.googleapis.com` from `connect-src`, left over from when the browser called Gemini directly — it now goes through the same-origin proxy, so that entry was dead allowlist.
+- **Real contrast failures** (`src/styles/tokens.css`): dark-theme `--accent: #818cf8` as active-nav text measured 4.15 on `--surface-raised` (bottom nav) and 3.94 on the accent-soft sidebar fill, both under the 4.5 minimum. Lightened to `#9aa5fb` (worst case now 5.13) with `--accent-hover` moved to `#c7d0fe` to stay distinguishable. Light theme was already passing and is unchanged.
+- **False contrast failures** (`tests/e2e/axe-audit.mjs`): the remaining CI failures on `/` were an artifact of the new hero entrance animation, not a real defect — the audit ran axe at a fixed 500ms while the stagger was still fading in, so it sampled half-transparent text (foregrounds like `#0a0d18` on `#080b16`, and the same element reporting different colours per viewport gave it away). The audit now runs with `reducedMotion: 'reduce'` and waits for `document.getAnimations()` to settle, so it measures the resting state. That also covers the reduced-motion path.
+
+**Verified**
+- Full axe sweep across all 10 routes at both viewports: clean. Separately ran the same sweep forced to light theme: also clean.
+- Typecheck (app + `api/`), lint, full test suite (37 tests), and build all green.
+
 ## 2026-07-30 — The real AI proxy: shared Gemini key, no setup for visitors
 
 **Done**

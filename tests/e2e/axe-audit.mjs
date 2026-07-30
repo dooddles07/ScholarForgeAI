@@ -32,8 +32,24 @@ const VIEWPORTS = [
 const browser = await chromium.launch();
 let totalViolations = 0;
 
+/*
+ * Colour contrast must be measured once the page has settled. Sampling mid-transition reads a
+ * half-faded composite (a fading-in element literally is low contrast for a few hundred ms) and
+ * reports failures that no user ever sees. `reducedMotion` removes entrance animation entirely,
+ * which is both the deterministic state to audit and a check that the reduced-motion path renders.
+ */
+async function settle(page) {
+  await page
+    .waitForFunction(
+      () => document.getAnimations().every((a) => a.playState === 'finished' || a.playState === 'idle'),
+      null,
+      { timeout: 3000 },
+    )
+    .catch(() => {});
+}
+
 for (const viewport of VIEWPORTS) {
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
   const page = await context.newPage();
 
   // Seed the sample document so routes that need one have real content to audit.
@@ -45,6 +61,7 @@ for (const viewport of VIEWPORTS) {
   for (const route of ROUTES) {
     await page.goto(`${BASE}${route}`);
     await page.waitForTimeout(500);
+    await settle(page);
     await page.addScriptTag({ content: axeSource });
 
     const results = await page.evaluate(async () => {
