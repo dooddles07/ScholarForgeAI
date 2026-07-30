@@ -6,8 +6,12 @@ import { navItems } from './nav-items';
 export function Sidebar() {
   return (
     <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-line lg:bg-surface">
-      <Link to="/" className="flex min-h-16 items-center px-6">
-        <img src="/brand/logo-horizontal.png" alt="ScholarForge AI" className="h-6 w-auto" />
+      <Link
+        to="/"
+        className="flex min-h-16 items-center px-6 text-base font-semibold tracking-tight text-fg"
+      >
+        ScholarForge
+        <span className="ml-1.5 font-mono text-xs text-mark-text">AI</span>
       </Link>
 
       <nav aria-label="Main" className="flex-1 px-3 py-2">
