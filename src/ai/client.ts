@@ -1,4 +1,5 @@
 import type { Card, Question, StoredDocument } from '@/domain/types';
+import { bm25Rank } from '@/domain/retrieval/bm25';
 import { mockQuestions } from './mock/questions';
 import { mockCards } from './mock/cards';
 import { MOCK_DOC_ID } from './mock/document';
@@ -74,20 +75,7 @@ export async function answerQuestion(
 ): Promise<ChatReply> {
   await wait(THINKING_MS, options.signal);
 
-  const terms = question
-    .toLowerCase()
-    .split(/\W+/)
-    .filter((w) => w.length > 3);
-
-  const scored = doc.chunks
-    .map((chunk) => {
-      const text = chunk.text.toLowerCase();
-      const score = terms.reduce((sum, term) => sum + (text.includes(term) ? 1 : 0), 0);
-      return { chunk, score };
-    })
-    .filter((c) => c.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 2);
+  const scored = bm25Rank(doc.chunks, question, 2);
 
   if (scored.length === 0) {
     return { content: '', citations: [] };

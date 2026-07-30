@@ -17,6 +17,16 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (15 tests), and build all green.
 
+## 2026-07-30 — Real BM25 retrieval for ask-your-document chat
+
+**Done**
+- Built `src/domain/retrieval/bm25.ts`: client-side BM25 ranking with heading-path structural boosting, per [ADR-0006](08-DECISIONS/ADR-0006-BM25-RETRIEVAL-NOT-EMBEDDINGS.md).
+- Replaced the naive term-overlap scoring in `src/ai/client.ts:answerQuestion` with `bm25Rank`, keeping the same function signature and citation shape — no caller changes needed.
+- 5 unit tests in `bm25.test.ts` covering ranking correctness, empty query/document handling, heading boost, and topK.
+
+**Verified**
+- Typecheck, lint, full test suite (20 tests), and build all green.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**
