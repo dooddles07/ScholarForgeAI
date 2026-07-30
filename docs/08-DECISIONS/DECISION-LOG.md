@@ -16,6 +16,7 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 | [ADR-0005](ADR-0005-CLIENT-SIDE-PARSING.md) | Parse all document formats in the browser | Accepted | 2026-07-30 |
 | [ADR-0006](ADR-0006-BM25-RETRIEVAL-NOT-EMBEDDINGS.md) | Use client-side BM25 retrieval, not vector embeddings | Accepted | 2026-07-30 |
 | [ADR-0007](ADR-0007-PWA-OVER-NATIVE.md) | Ship an installable PWA rather than native apps | Accepted | 2026-07-30 |
+| [ADR-0008](ADR-0008-TWO-VISUAL-REGISTERS.md) | Expressive marketing page, calm app, one codebase | Accepted | 2026-07-30 |
 
 ## Format
 

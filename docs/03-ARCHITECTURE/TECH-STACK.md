@@ -35,10 +35,15 @@ When in doubt, write the fifty lines.
 
 | Package | Purpose | Licence | Cost |
 |---|---|---|---|
-| `tailwindcss` | Styling | MIT | Free |
+| `tailwindcss` | Styling (v4, CSS-first config) | MIT | Free |
 | `shadcn/ui` | Component patterns | MIT | Free |
 | `@radix-ui/*` | Accessible primitives | MIT | Free |
 | `lucide-react` | Icons | ISC | Free |
+| Newsreader | Display serif, marketing route only | OFL-1.1 | Free |
+
+**Newsreader** is the one webfont, and it is a deliberate exception to the system-fonts rule below. Self-hosted (the CSP forbids a third-party request), 132 KB variable woff2, `font-display: swap`, imported by `MarketingPage.tsx` so it lands in that route's chunk. The app never requests it. Reasoning in [ADR-0008](../08-DECISIONS/ADR-0008-TWO-VISUAL-REGISTERS.md).
+
+**No animation library.** Scroll-driven motion uses the CSS `animation-timeline` property with an `@supports` fallback. `motion` (~34 KB gzipped) was installed, found unnecessary, and removed. GSAP was rejected on licensing: its plugins do not cleanly satisfy rule 1 above, which matters for a project that encourages forks.
 
 **Why Tailwind** — responsive variants make the mobile-first requirement mechanical rather than a series of media-query decisions, and there is no runtime cost.
 
@@ -93,11 +98,9 @@ Hand-writing a service worker is a known source of subtle, hard-to-debug caching
 
 ## Charts
 
-| Package | Purpose | Licence | Cost |
-|---|---|---|---|
-| `recharts` | Dashboard charts | MIT | Free |
+**No charting library.** The question deferred in [OPEN-QUESTIONS.md](../06-PLANNING/OPEN-QUESTIONS.md) is settled: the dashboard needs one polyline and a set of proportional bars, which is about forty lines of hand-written SVG. `recharts` would have cost more than the entire dashboard route to draw them.
 
-Under review. The dashboard needs one accuracy-trend line chart and one per-topic bar chart. That may be cheaper as hand-written SVG than as a charting library, given the bundle target. Decision deferred to implementation, recorded in [OPEN-QUESTIONS.md](../06-PLANNING/OPEN-QUESTIONS.md). If `recharts` is kept, it is lazy-loaded with the dashboard route.
+The trend chart carries `role="img"` with a summary label, and the same figures appear as a text list beneath it, because a line is not readable by everyone.
 
 ## Testing
 

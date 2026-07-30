@@ -13,9 +13,31 @@ Tokens in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). Adaptation rules in [RESPONSIVE-
 4. **Progress is always visible.** The user always knows where they are and how much is left.
 5. **Trust is shown, not claimed.** Citations on generated content, and a plain statement that files stay local.
 
-## Landing
+## Marketing page (`/`)
 
-The only screen a first-time visitor sees, and the only chance to avoid losing them.
+Added in [ADR-0008](../08-DECISIONS/ADR-0008-TWO-VISUAL-REGISTERS.md). The expressive register: dark ground, display serif, scroll-driven motion.
+
+**It opens with a working drop zone, not a picture of one.** Dropping a file goes straight to `/app/parse`, so the three-tap path in [USER-FLOWS.md](../01-PRODUCT/USER-FLOWS.md) is intact and the drop zone still clears the fold at 320x568. Everything below the fold is for the visitor who needs convincing first.
+
+| # | Section | Job |
+|---|---|---|
+| 1 | Hero and drop zone | Start, or read on |
+| 2 | Rereading is not studying | The problem, concretely |
+| 3 | From a page to a question | **The signature.** A source passage, an amber thread, the question it produced |
+| 4 | Four things out of one file | Real rendered quiz, card, explanation, and exam paper. Not icons in boxes. |
+| 5 | Nothing is invented | The grounding rule |
+| 6 | Your file never leaves your device | Including the honest caveat that request text does transit |
+| 7 | Free means free | The real cost table, every service and its limit |
+| 8 | Take it and run your own | Source and self-hosting |
+| 9 | Bring a file | The drop zone again |
+
+Section 6 states plainly that the portion of text needed for a request is sent to the model and discarded. [SECURITY-AND-PRIVACY.md](../04-OPERATIONS/SECURITY-AND-PRIVACY.md) says so; a page arguing that the product never invents things cannot itself overstate its privacy position.
+
+Returning visitors skip `/` and land on the library.
+
+## Landing (in-app)
+
+Reached at `/app/library`. The calm register.
 
 ```
 ┌────────────────────────────────────┐

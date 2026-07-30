@@ -1,0 +1,115 @@
+/* Design tokens. Components reference semantic names, never raw values. */
+
+:root,
+[data-theme='light'] {
+  --bg: #ffffff;
+  --surface: #f8fafc;
+  --surface-raised: #ffffff;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-subtle: #94a3b8;
+  --accent: #4338ca;
+  --accent-hover: #3730a3;
+  --accent-text: #ffffff;
+  --accent-soft: rgb(67 56 202 / 0.08);
+  --correct: #15803d;
+  --correct-soft: rgb(21 128 61 / 0.1);
+  --incorrect: #b91c1c;
+  --incorrect-soft: rgb(185 28 28 / 0.1);
+  --warning: #b45309;
+
+  /* The highlighter. Citations, source marks, and the thread that joins them. */
+  --mark: #ffc84a;
+  --mark-text: #8a5a00;
+  --mark-soft: rgb(255 200 74 / 0.3);
+  --mark-line: #d99a0b;
+}
+
+[data-theme='dark'] {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-raised: #283548;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-text: #0f172a;
+  --accent-soft: rgb(129 140 248 / 0.14);
+  --correct: #4ade80;
+  --correct-soft: rgb(74 222 128 / 0.14);
+  --incorrect: #f87171;
+  --incorrect-soft: rgb(248 113 113 / 0.14);
+  --warning: #fbbf24;
+
+  --mark: #ffc84a;
+  --mark-text: #ffc84a;
+  --mark-soft: rgb(255 200 74 / 0.16);
+  --mark-line: #ffc84a;
+}
+
+/*
+ * Marketing ground. Fixed across themes: the marketing page is always dark, so its
+ * contrast is verified once rather than twice.
+ */
+:root {
+  --ink: #080b16;
+  --ink-raised: #0f1424;
+  --ink-border: #1e2740;
+  --ink-text: #f5f6fa;
+  --ink-muted: #9aa3bd;
+  --paper: #fbfaf7;
+  --paper-text: #14110b;
+  /* Faded page text still has to be readable: opacity shortcuts failed contrast at AA. */
+  --paper-muted: #5f5849;
+  --paper-rule: #e3ded1;
+}
+
+/*
+ * --mark is ~11:1 on ink but only ~1.6:1 on paper or white. Use it as a fill, an underline,
+ * or a rule. For amber TEXT on a light surface use --mark-text, which is contrast-safe.
+ */
+
+:root {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+
+  --duration-fast: 120ms;
+  --duration: 200ms;
+  --duration-slow: 320ms;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+  --measure: 70ch;
+}
+
+/* Reading mode: wider tracking and leading, for dyslexic readers and anyone who wants it. */
+[data-reading='on'] {
+  --reading-letter-spacing: 0.045em;
+  --reading-word-spacing: 0.16em;
+  --reading-line-height: 1.95;
+}

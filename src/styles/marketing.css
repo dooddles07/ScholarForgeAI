@@ -1,0 +1,67 @@
+/*
+ * Marketing-only. Imported by MarketingPage so the app route never downloads it.
+ * 132 KB variable woff2, self-hosted (no third-party request, and the CSP forbids one).
+ * font-display: swap means the page renders in the system serif and upgrades in place.
+ */
+@font-face {
+  font-family: 'Newsreader';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/newsreader-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F,
+    U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  text-wrap: balance;
+}
+
+/* The thread. An amber rule that draws itself as the section scrolls into view. */
+@keyframes thread-draw {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.thread-line {
+  transform-origin: top;
+  animation: thread-draw 900ms var(--ease) both;
+  animation-timeline: view();
+  animation-range: entry 10% cover 45%;
+}
+
+/* Browsers without scroll-driven animation get the line already drawn, not a missing one. */
+@supports not (animation-timeline: view()) {
+  .thread-line {
+    animation: none;
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thread-line {
+    animation: none;
+    transform: scaleY(1);
+  }
+}
+
+/*
+ * Paper: warm rather than white, with a single rule under the file header. Ruled lines behind
+ * the whole block were tried and cut; they never align with mixed leading and read as a table.
+ */
+.paper-sheet {
+  background-color: var(--paper);
+  color: var(--paper-text);
+}
+
+.paper-sheet__header {
+  border-bottom: 1px solid var(--paper-rule);
+}

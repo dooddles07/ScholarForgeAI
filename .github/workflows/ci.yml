@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The point of the proxy is that the key never reaches a browser. Prove it every build.
+      - name: Scan the bundle for key-shaped strings
+        run: |
+          if grep -rEq 'AIza[0-9A-Za-z_-]{35}|sk-[0-9A-Za-z]{20,}' dist/; then
+            echo "A key-shaped string is present in the build output."
+            exit 1
+          fi
+          echo "No key-shaped strings in dist/."
+
+      # There is no paid tier and there never will be. Catch it if wording drifts.
+      - name: Check for payment language
+        run: |
+          if grep -rEiq '\b(upgrade to|premium plan|subscribe now|free trial|paywall)\b' src/; then
+            echo "Payment language found in src/."
+            exit 1
+          fi
+          echo "No payment language."
+
+      - name: Check the initial bundle size
+        run: |
+          MAIN=$(find dist/assets -name 'index-*.js' | head -1)
+          SIZE=$(gzip -c "$MAIN" | wc -c)
+          echo "Initial bundle: $SIZE bytes gzipped"
+          if [ "$SIZE" -gt 307200 ]; then
+            echo "Over the 300 KB gzipped budget."
+            exit 1
+          fi
+
+  accessibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - name: Serve and audit
+        run: |
+          npx vite preview --port 5180 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5180 >/dev/null && break
+            sleep 1
+          done
+          node tests/e2e/axe-audit.mjs

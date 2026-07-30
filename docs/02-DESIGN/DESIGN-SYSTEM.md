@@ -5,11 +5,17 @@ Last updated: 2026-07-30
 
 ## Direction
 
-Calm, legible, and unfussy. The user is tired and under pressure, and the interface should reduce load rather than compete for attention.
+There are two registers. See [ADR-0008](../08-DECISIONS/ADR-0008-TWO-VISUAL-REGISTERS.md).
+
+**The app (`/app/*`) is calm, legible, and unfussy.** The user is tired and under pressure, and the interface should reduce load rather than compete for attention.
 
 Concretely that means: generous whitespace, one accent colour used sparingly, no gradients on functional surfaces, no decorative illustration, and no animation that does not communicate something.
 
 The reference point is a well-set book rather than a dashboard.
+
+**The marketing page (`/`) is expressive.** Dark ground, a display serif, scroll-driven motion, and real rendered output. It has to explain a product whose central claims sound like marketing until they are shown.
+
+Both registers hold the same floor: AA contrast, 44px targets, visible focus, keyboard operation, reduced-motion honoured, no horizontal scroll at 320px.
 
 ## Colour
 
@@ -33,6 +39,32 @@ Components reference semantic names, never raw values. This is what makes dark m
 | `--correct` | Right answers |
 | `--incorrect` | Missed answers |
 | `--warning` | Storage and quota warnings |
+| `--mark` | The highlighter. Citations, source marks, the thread. |
+| `--mark-text` | Contrast-safe amber for text on a light surface |
+| `--mark-soft` | The highlight wash behind a quoted passage |
+| `--mark-line` | The thread rule joining a citation to its passage |
+
+### The highlighter
+
+`--mark` is `#ffc84a` in both themes. It is the one colour added to the original palette, and it carries the product's central promise: every generated item shows the page it came from.
+
+**It is a fill, an underline, or a rule. It is never body text on a light surface.** Amber on paper is about 1.6:1. Use `--mark-text` (`#8a5a00` in light, `#ffc84a` in dark) wherever the amber has to be read as text. This rule is easy to break by accident, so it carries a comment in `tokens.css`.
+
+### Marketing ground
+
+Fixed across themes, because the marketing page is always dark and its contrast is then verified once rather than twice.
+
+```css
+--ink:        #080b16;   /* page ground */
+--ink-raised: #0f1424;   /* cards */
+--ink-border: #1e2740;
+--ink-text:   #f5f6fa;
+--ink-muted:  #9aa3bd;
+--paper:        #fbfaf7;  /* a rendered document page: warm, not white */
+--paper-text:   #14110b;
+--paper-muted:  #5f5849;  /* faded page text that still passes AA */
+--paper-rule:   #e3ded1;
+```
 
 ### Light
 
@@ -88,9 +120,14 @@ Correct and incorrect states always pair colour with an icon and a text label. A
 --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
              Roboto, "Helvetica Neue", Arial, sans-serif;
 --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+--font-display: "Newsreader", Georgia, "Times New Roman", serif;
 ```
 
-System fonts, deliberately. No webfont download, no layout shift while a font loads, no bandwidth cost on a metered connection, and text renders instantly. For a product read on cheap phones over slow data, this is worth more than a distinctive typeface.
+System fonts in the app, deliberately. No webfont download, no layout shift while a font loads, no bandwidth cost on a metered connection, and text renders instantly. For a product read on cheap phones over slow data, this is worth more than a distinctive typeface.
+
+**`--font-display` is the one exception, and it is confined to `/`.** Newsreader, a variable serif with an optical-size axis, self-hosted as a 132 KB woff2 with `font-display: swap`. It is imported by `MarketingPage.tsx`, so it lands in that route's chunk and the app never requests it. A marketing page read once on wifi can afford a typeface; a quiz screen read at midnight on mobile data cannot.
+
+**Mono carries numbers.** Page citations, question counts, review intervals, and the cost table all use `--font-mono` with `font-variant-numeric: tabular-nums`. "p. 47" in mono reads as a reference rather than as prose, and tabular figures stop a counter jittering as it climbs.
 
 ### Scale
 
@@ -162,6 +199,8 @@ Motion is functional only:
 
 Every transition is wrapped in a `prefers-reduced-motion` guard. The card flip is the one animation with a real job: it communicates that the same card has two sides. Even that reduces to a cross-fade when motion is reduced.
 
+**No animation library.** The marketing page's scroll-driven effects use the CSS `animation-timeline: view()` property, with an `@supports` fallback that renders the finished state rather than a missing one. GSAP and `motion` were both considered: GSAP's plugin licensing does not cleanly satisfy the permissive-only rule in [TECH-STACK.md](../03-ARCHITECTURE/TECH-STACK.md), and `motion` would have added roughly 34 KB gzipped to do what a keyframe already does. The app uses plain CSS transitions on the duration tokens above.
+
 No loading skeletons that pulse indefinitely. Progress is reported with real stage text instead, per [CONTENT-AND-COPY-GUIDE.md](CONTENT-AND-COPY-GUIDE.md).
 
 ## Components
@@ -231,12 +270,14 @@ The most-viewed component in the app.
 
 ### Citation
 
-Consistent everywhere generated content appears.
+The most important component in the product, and consistent everywhere generated content appears.
 
-- `--text-xs`, `--text-muted`
-- Format: "From page 47"
-- Tappable, opening the source passage
-- Never styled as a warning or an afterthought; it is a trust signal and should look like a normal part of the content
+- `--text-sm`, `--mark-text`, on a `--mark-soft` chip, with a highlighter icon
+- The page number in `--font-mono` with tabular figures: "From page 47"
+- Tappable. Opening it reveals the source passage with the quoted sentence highlighted in `--mark-soft`, joined to the chip by a `--mark-line` rule
+- Never styled as a warning or an afterthought
+
+**This was previously specified at `--text-xs` in `--text-muted`.** That is footnote styling on the one element that separates this product from a tool that makes things up, and it contradicted the next line of its own spec. Raised deliberately in [ADR-0008](../08-DECISIONS/ADR-0008-TWO-VISUAL-REGISTERS.md).
 
 ### Progress and stats
 

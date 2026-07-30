@@ -9,13 +9,13 @@ Recorded here rather than forgotten. Each entry says what the question is, why i
 
 ## Q1 — Charting library or hand-written SVG?
 
-**Status:** deferred to M11.
+**Status:** settled 2026-07-30. Hand-written SVG.
 
-The dashboard needs an accuracy trend line and a per-topic bar chart. `recharts` is in [TECH-STACK.md](../03-ARCHITECTURE/TECH-STACK.md) provisionally, but two simple charts may be cheaper as hand-written SVG given the 300 KB bundle budget.
+The dashboard needs an accuracy trend line and a set of proportional bars. Written by hand, that is one `<polyline>` and some divs with a width percentage: the whole `DashboardPage` chunk lands at 1.6 KB gzipped. `recharts` starts in the tens of kilobytes before drawing anything.
 
-**Settled by:** building both, measuring the bundle difference. If `recharts` costs more than about 40 KB gzipped for two charts, write the SVG.
+`recharts` is removed from [TECH-STACK.md](../03-ARCHITECTURE/TECH-STACK.md) and was never installed.
 
-**Note:** if `recharts` is kept, it must be lazy-loaded with the dashboard route so it never affects the initial bundle.
+**Accessibility note:** the trend chart carries `role="img"` with a summary label, and the same figures repeat as a text list beneath it. A line is not readable by everyone.
 
 ---
 

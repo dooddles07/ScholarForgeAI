@@ -6,7 +6,12 @@ Upload a PDF, slide deck, or book. Get quizzes, flashcards, plain-language expla
 
 Free forever. No account. Works on your phone. Open source.
 
-> **Status: planning complete, code not started.** The full design lives in [`docs/`](docs/README.md). Build sequence in [BUILD-ORDER.md](docs/06-PLANNING/BUILD-ORDER.md).
+> **Status: the interface is built and runs on mock content.** Upload a PDF and it is genuinely parsed, stored, and quizzed, entirely in your browser. The questions come from local fixtures rather than a live model, because the AI proxy is not written yet.
+>
+> Working: marketing page, library, upload and parsing, document hub, quizzes, flashcards with spaced repetition, ask-your-document, printable exams, progress, settings.
+> Not yet: the Cloudflare proxy, `.pptx` / `.docx` / `.epub`, offline support, exports.
+>
+> Full design in [`docs/`](docs/README.md), build sequence in [BUILD-ORDER.md](docs/06-PLANNING/BUILD-ORDER.md), current state in [ACTIVITY-LOG.md](docs/ACTIVITY-LOG.md).
 
 ---
 

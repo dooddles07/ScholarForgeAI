@@ -1,0 +1,65 @@
+/* Exam and answer-key printing. Loaded only by the exam route. */
+
+@media print {
+  /* Force light regardless of theme: printing a dark theme wastes ink and reads badly. */
+  :root,
+  [data-theme='dark'] {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --border: #cccccc;
+    --text: #000000;
+    --text-muted: #333333;
+    --mark-text: #000000;
+    --mark-soft: transparent;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    /* Serif on paper. Screen legibility and print legibility are not the same problem. */
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.45;
+  }
+
+  /* No interface chrome on paper. */
+  nav,
+  header[data-app-header],
+  .no-print,
+  button,
+  a[href^='/app'] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  .print-exam {
+    max-width: none;
+  }
+
+  /* A question split from its options is the classic embarrassing print bug. */
+  .print-question {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1.1rem;
+  }
+
+  .print-answer-key {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  @page {
+    margin: 18mm 16mm 20mm;
+  }
+}
+
+.print-only {
+  display: none;
+}

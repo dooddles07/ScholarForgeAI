@@ -7,6 +7,55 @@ Newest entries at the top.
 
 ---
 
+## 2026-07-30 — Frontend built: marketing page and full app shell
+
+**Done**
+- Scaffolded Vite + React 19 + TypeScript (strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) + Tailwind v4.
+- Built `src/styles/tokens.css` from [DESIGN-SYSTEM.md](02-DESIGN/DESIGN-SYSTEM.md), plus the new marketing tokens (`--ink`, `--mark`, `--paper`).
+- ESLint layer boundaries wired from the first commit. They caught five real violations during the build, all fixed by routing through hooks.
+- Marketing page at `/`: nine sections, working drop zone in the hero, scroll-driven amber thread, real cost table.
+- Every app route built: library, parse, document hub, quiz, flashcards, review, chat, exam, dashboard, settings.
+- Real PDF text extraction via `pdfjs-dist` with page numbers and bookmark outlines; page-range fallback when no outline exists. Real Dexie persistence on the v1 schema.
+- FSRS scheduling through `ts-fsrs`, with the resulting interval shown on each rating button.
+- Mock generation in `src/ai/client.ts`. On the sample document it serves hand-written questions; on a real upload it builds genuinely grounded fill-in-the-blank and true/false questions from the user's own sentences, citing real pages.
+- All copy in `src/copy/`, taken verbatim from [CONTENT-AND-COPY-GUIDE.md](02-DESIGN/CONTENT-AND-COPY-GUIDE.md) where it existed.
+- Print stylesheet for exams. `_headers` with the CSP from [SECURITY-AND-PRIVACY.md](04-OPERATIONS/SECURITY-AND-PRIVACY.md), including a hash for the inline theme script. CI with typecheck, lint, test, build, key scan, payment-language scan, bundle budget, and an axe sweep.
+
+**Decisions**
+
+| Area | Decision | Recorded in |
+|---|---|---|
+| Visual direction | Expressive marketing page, calm app, one codebase | [ADR-0008](08-DECISIONS/ADR-0008-TWO-VISUAL-REGISTERS.md) |
+| Citation styling | Promoted from muted 12px caption to an amber tappable chip | [DESIGN-SYSTEM.md](02-DESIGN/DESIGN-SYSTEM.md) |
+| Charts | Hand-written SVG. `recharts` never installed. | [OPEN-QUESTIONS.md](06-PLANNING/OPEN-QUESTIONS.md) Q1 |
+| Animation | CSS `animation-timeline`, no library. `motion` installed, found unnecessary, removed. GSAP rejected on licensing. | [TECH-STACK.md](03-ARCHITECTURE/TECH-STACK.md) |
+| Typography | Newsreader variable serif, self-hosted, marketing route only | [ADR-0008](08-DECISIONS/ADR-0008-TWO-VISUAL-REGISTERS.md) |
+
+**Verified**
+- Typecheck, lint, and 9 unit tests green.
+- axe-core clean across all 10 routes at 390px and 1280px, with no horizontal scroll at 320px.
+- A real PDF uploaded through the hero drop zone, parsed, stored, and quizzed end to end.
+- Initial bundle 87 KB gzipped against a 300 KB budget. `pdfjs` (108 KB gz) lazy-loads only for PDFs. Marketing CSS and font are in their own chunk.
+
+**Bugs found and fixed during the build**
+- `getSettings()` wrote a default row inside a `useLiveQuery`, which Dexie runs in a read-only transaction. Split the read from the seed.
+- StrictMode double-invoked the parse effect, and a destructive `takePendingFile()` left the second pass with no file. Now peeks and clears once parsing settles.
+- Quiz silently returned three questions when ten were asked for. Now says how many were left out and why.
+
+**Status**
+Marketing page and full app shell working on mock generation. Milestones 0, 2, 3, 5, 6, 8, 9, and 11 are substantially covered; Milestone 4 (the proxy) is not started.
+
+**Next action**
+Milestone 4: write `functions/api/generate.ts`, the quota counters, and the grounding validator, then point `src/ai/client.ts` at it.
+
+**Blockers**
+None for coding. Three things cannot be verified from this environment and remain open: printing an exam on actual paper, real-device testing on Android and iOS, and the Gemini daily request figure.
+
+**Not yet built**
+`.pptx`, `.docx`, and `.epub` parsing (Milestone 7); the Milestone 1 parsing refinements (multi-column clustering, hyphen rejoining, running-header stripping, scan detection); BM25 retrieval; explanations at three depths; Anki and Quizlet export; the service worker and offline support; the streak mechanic.
+
+---
+
 ## 2026-07-30 — Planning phase complete
 
 **Done**
