@@ -67,6 +67,15 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (34 tests), and build all green.
 
+## 2026-07-30 — Dependency cleanup: unused Radix packages
+
+**Done**
+- Removed `@radix-ui/react-progress`, `@radix-ui/react-radio-group`, `@radix-ui/react-label`, `@radix-ui/react-tabs` from `package.json` — confirmed unimported anywhere in `src`, since progress bars and tabs were already hand-rolled in CSS (`QuizProgress.tsx`, `ParseProgressPanel.tsx`).
+- Left `@radix-ui/react-tooltip` and the `motion` package alone for now: both are candidates for actual use in the upcoming UI/motion pass (a citation hover-preview tooltip, and three specific motion moments), so the final keep/remove call happens there instead of removing them here and possibly re-adding them a third time.
+
+**Verified**
+- Typecheck, lint, full test suite (34 tests), and build all green. No behaviour change.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**
