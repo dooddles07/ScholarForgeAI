@@ -5,6 +5,7 @@ import { scoreQuiz, type QuizScore } from '@/domain/quiz/scoring';
 import { shuffleOptions } from '@/domain/quiz/shuffle';
 import { useGenerateQuestions } from '@/hooks/use-generation';
 import { useRecordStudyDay } from '@/hooks/use-streak';
+import { generationErrorMessage } from '@/lib/generation-error';
 
 export type Phase = 'config' | 'generating' | 'question' | 'results';
 
@@ -35,8 +36,8 @@ export function useQuizSession(doc: StoredDocument | undefined) {
         startedAt.current = Date.now();
         questionStartedAt.current = Date.now();
         setPhase('question');
-      } catch {
-        setError('We could not make questions from this document.');
+      } catch (err) {
+        setError(generationErrorMessage(err));
         setPhase('config');
       }
     },

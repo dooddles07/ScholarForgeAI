@@ -4,6 +4,8 @@ import type { Card, StoredDocument } from '@/domain/types';
 import { db } from '@/persistence/db';
 import { saveCards, saveDeck } from '@/persistence/study';
 import { generateCards } from '@/ai/client';
+import { generationErrorMessage } from '@/lib/generation-error';
+import { useSettings } from './use-settings';
 
 export function useDeckCards(documentId: string | undefined) {
   return useLiveQuery(
@@ -27,27 +29,35 @@ export function useDueCards(limit: number) {
 
 export function useGenerateDeck() {
   const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { settings } = useSettings();
 
-  const generate = useCallback(async (doc: StoredDocument, count = 12) => {
-    setGenerating(true);
-    try {
-      const deckId = `deck-${doc.id}`;
-      const existing = await db.decks.get(deckId);
-      if (!existing) {
-        await saveDeck({
-          id: deckId,
-          name: doc.title,
-          documentId: doc.id,
-          studySetId: null,
-          createdAt: Date.now(),
-        });
+  const generate = useCallback(
+    async (doc: StoredDocument, count = 12) => {
+      setGenerating(true);
+      setError(null);
+      try {
+        const deckId = `deck-${doc.id}`;
+        const existing = await db.decks.get(deckId);
+        if (!existing) {
+          await saveDeck({
+            id: deckId,
+            name: doc.title,
+            documentId: doc.id,
+            studySetId: null,
+            createdAt: Date.now(),
+          });
+        }
+        const cards = await generateCards(doc, deckId, count, { apiKey: settings.userApiKey });
+        await saveCards(cards);
+      } catch (err) {
+        setError(generationErrorMessage(err));
+      } finally {
+        setGenerating(false);
       }
-      const cards = await generateCards(doc, deckId, count);
-      await saveCards(cards);
-    } finally {
-      setGenerating(false);
-    }
-  }, []);
+    },
+    [settings.userApiKey],
+  );
 
-  return { generate, generating };
+  return { generate, generating, error };
 }

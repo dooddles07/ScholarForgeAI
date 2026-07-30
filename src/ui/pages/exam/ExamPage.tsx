@@ -8,6 +8,7 @@ import { useGenerateQuestions } from '@/hooks/use-generation';
 import { PageHeader } from '@/ui/components/PageHeader';
 import { Button } from '@/ui/components/primitives/Button';
 import { exam as examCopy, generation } from '@/copy/labels';
+import { generationErrorMessage } from '@/lib/generation-error';
 import { ExamPaper } from './ExamPaper';
 import '@/styles/print.css';
 
@@ -17,6 +18,7 @@ export default function ExamPage() {
   const doc = useDocument(id);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [building, setBuilding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'exam' | 'key'>('exam');
   const generateQuestions = useGenerateQuestions();
 
@@ -25,8 +27,11 @@ export default function ExamPage() {
   async function build() {
     if (!doc) return;
     setBuilding(true);
+    setError(null);
     try {
       setQuestions(await generateQuestions(doc, 10));
+    } catch (err) {
+      setError(generationErrorMessage(err));
     } finally {
       setBuilding(false);
     }
@@ -45,6 +50,11 @@ export default function ExamPage() {
             <Button className="mt-5" disabled={building} onClick={() => void build()}>
               {building ? generation.exam : examCopy.generate}
             </Button>
+            {error && (
+              <p role="alert" className="mt-4 text-sm text-incorrect">
+                {error}
+              </p>
+            )}
           </div>
         ) : (
           <div className="mx-auto max-w-4xl">

@@ -1,23 +1,39 @@
 # Deployment
 
-Purpose: how to get this running on Vercel today, and what changes once the real AI proxy is built.
+Purpose: how to get this running on Vercel, real AI generation included.
 Last updated: 2026-07-30
 
-Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md), which supersedes [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md).
+Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md), which supersedes [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md). Shared-key proxy design in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) and [RATE-LIMITING-AND-ABUSE.md](RATE-LIMITING-AND-ABUSE.md).
 
-**Current status:** the app runs entirely on `src/ai/mock/` fixtures (`IS_MOCK_MODE = true` in `src/ai/client.ts`). No Gemini key, no serverless function, and no quota store exist yet. Everything below in "Deploying today" gets the real, working app (real parsing, real storage, real spaced repetition — just mock-generated content) live for $0. The "Turning on real AI generation" section at the end describes what changes later, when that part is built.
+**Current status:** `api/generate.ts` is built and `src/ai/client.ts` calls it in production builds (`IS_MOCK_MODE` is `import.meta.env.DEV`, so `npm run dev` still runs on fixtures with no credentials, and a real build calls the live proxy). It needs a Gemini key and an Upstash Redis database to actually work once deployed — see step 4 below.
 
-## Deploying today
-
-### Prerequisites
+## Prerequisites
 
 | Requirement | Cost |
 |---|---|
 | Vercel account | Free |
 | GitHub repository | Free |
+| Google AI Studio API key | Free |
+| Upstash account | Free |
 | Node 20 or later | Free |
 
-### 1. Create the Vercel project
+## First-time setup
+
+### 1. Get a Gemini API key
+
+1. Go to Google AI Studio and sign in
+2. Create an API key
+3. Check the current rate limits for `gemini-2.5-flash` on Google's official rate-limit page — this number changes without notice and must never be hardcoded, see [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md)
+
+Record that limit. It sets `DAILY_GLOBAL_LIMIT` in step 4.
+
+### 2. Create an Upstash Redis database
+
+Free tier, at [upstash.com](https://upstash.com). Create a database, then copy its REST URL and REST token from the database's dashboard — these become `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
+
+This holds the quota counters and the kill switch (`api/_lib/quota.ts`). Vercel Hobby has no included key-value store, which is why Upstash is here instead of the Workers KV the original Cloudflare plan assumed.
+
+### 3. Create the Vercel project
 
 In the Vercel dashboard, import the GitHub repository, then confirm:
 
@@ -28,31 +44,54 @@ In the Vercel dashboard, import the GitHub repository, then confirm:
 | Output directory | `dist` |
 | Node version | 20 |
 
-### 2. Deploy
+`api/generate.ts` is detected and deployed automatically as an Edge Function — no extra configuration.
+
+### 4. Set environment variables
+
+In Project Settings, Environment Variables. Set for both Production and Preview.
+
+| Variable | Type | Purpose |
+|---|---|---|
+| `GEMINI_API_KEY` | **Secret** | The shared project key |
+| `GEMINI_MODEL` | Plain | `gemini-2.5-flash` |
+| `DAILY_GLOBAL_LIMIT` | Plain | Set **below** the provider's real daily limit (start small — 50 is a reasonable default for a personal demo) |
+| `DAILY_IP_LIMIT` | Plain | Per-visitor daily allowance (10 is a reasonable default) |
+| `ALLOWED_ORIGIN` | Plain | The deployed origin, e.g. `https://your-project.vercel.app` |
+| `IP_HASH_SALT` | **Secret** | Any random string — mixed into the IP hash so the quota key can never be reversed to a real address |
+| `UPSTASH_REDIS_REST_URL` | Plain | From step 2 |
+| `UPSTASH_REDIS_REST_TOKEN` | **Secret** | From step 2 |
+
+`GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` must be created as **Secrets**, not plain variables. Plain variables are readable in the dashboard and appear in logs.
+
+### 5. Deploy
 
 Push to `main`. Vercel builds and deploys automatically.
 
-### 3. Verify
+### 6. Verify
 
 Work through this list against the live deployment:
 
 - [ ] The landing page loads
 - [ ] Upload a PDF, `.docx`, `.pptx`, or `.epub`; it parses; no network request carries file contents (check the network tab — parsing is entirely client-side)
-- [ ] Generate a quiz and flashcards; questions appear with page citations
-- [ ] Ask-your-document chat returns an answer with a citation
+- [ ] Generate a quiz; real questions appear with page citations (not the mock fixtures)
+- [ ] Ask-your-document chat returns a real answer with a citation
 - [ ] Export a deck to CSV; export and restore a backup file
-- [ ] Go offline (dev tools, or airplane mode); the app shell still loads and card review still works
+- [ ] `GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` do not appear anywhere in the built JS bundle — search the deployed bundle, not the source
+- [ ] `/api/generate` rejects a request carrying a foreign `Origin` header
+- [ ] Go offline; the app shell still loads and card review still works
 - [ ] Install to a phone home screen; it opens standalone
 - [ ] Lighthouse: accessibility 95 or above
+
+The bundle key check matters most. Search the actual deployed JavaScript, not by reasoning about the code — `api/` never ships to the client bundle since Vite only builds `src/`, but verify it anyway.
 
 ## Environments
 
 | Environment | Trigger | Purpose |
 |---|---|---|
 | Production | Push to `main` | The live site |
-| Preview | Any pull request | Automatic per-PR URL, on Vercel's own domain |
+| Preview | Any pull request | Automatic per-PR URL |
 
-Preview URLs are public but unlisted. Nothing sensitive exists in them, since there is no server-side data at all yet.
+Preview deployments get their own environment variables. Give them a **separate, lower-limit key** if possible, so a preview cannot exhaust production's quota. If only one key is available, set `DAILY_GLOBAL_LIMIT` low on Preview.
 
 ## Local development
 
@@ -63,7 +102,16 @@ npm install
 npm run dev
 ```
 
-No `.env` file needed yet — there is nothing to configure until the AI proxy exists. Runs entirely on `src/ai/mock/` fixtures, so a contributor can work on the whole interface with no credentials.
+Runs on `src/ai/mock/` fixtures by default (`IS_MOCK_MODE` is `import.meta.env.DEV`), so **no API key or Upstash account is needed** to work on the interface. This is deliberate: it removes the biggest onboarding barrier for a contributor.
+
+To exercise the real function locally, copy `.env.example` to `.env`, fill in real values, then:
+
+```bash
+npm run build
+vercel dev
+```
+
+`vercel dev` (from the Vercel CLI, `npm i -g vercel`) is required to run the Edge Function locally — a plain `vite preview` only serves the static build.
 
 ## CI
 
@@ -71,7 +119,7 @@ No `.env` file needed yet — there is nothing to configure until the AI proxy e
 
 ```
 1. npm ci
-2. npm run typecheck
+2. npm run typecheck   — tsc -b (app) + tsc -p tsconfig.api.json (the api/ function)
 3. npm run lint
 4. npm test
 5. npm run build
@@ -91,31 +139,70 @@ Both live in `vercel.json` at the repo root (there is no `public/_headers` or `p
 - `rewrites`: the SPA fallback (`/(.*)` → `/index.html`), required or a direct visit to any route other than `/` 404s.
 - `headers`: CSP, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, plus long-lived immutable caching on `/assets/*` and `/fonts/*` (safe because Vite hashes filenames).
 
-## Rolling back
+## Operating it
+
+### Rotating the key
+
+Takes a couple of minutes and needs no redeploy.
+
+1. Set the kill switch (see below)
+2. Revoke the old key in Google AI Studio
+3. Create a new key
+4. Update the `GEMINI_API_KEY` secret in the Vercel dashboard
+5. Clear the kill switch
+6. Verify a generation works
+7. Record it in [ACTIVITY-LOG.md](../ACTIVITY-LOG.md)
+
+### The kill switch
+
+Disables shared-key generation immediately, without a deployment. Uses Upstash's REST API directly.
+
+```bash
+# stop
+curl -X POST "$UPSTASH_REDIS_REST_URL/set/killswitch/true" \
+  -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
+
+# resume
+curl -X POST "$UPSTASH_REDIS_REST_URL/del/killswitch" \
+  -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
+```
+
+While active, the proxy returns `SERVICE_DISABLED`. Everything already stored keeps working. Requests carrying a user-supplied key (via Settings → your own API key) are unaffected, since those cost the shared quota nothing.
+
+Use it if the key is compromised, if unexplained usage appears, or if the provider is behaving strangely.
+
+### Adjusting limits
+
+Change `DAILY_GLOBAL_LIMIT` or `DAILY_IP_LIMIT` in the Vercel dashboard. Takes effect on the next request; no redeploy needed.
+
+Review `DAILY_GLOBAL_LIMIT` against Google's published limit at least quarterly.
+
+### Rolling back
 
 Vercel keeps every previous deployment. Select an earlier one and promote it to production from the dashboard.
 
 Note the one thing to check after a rollback: if a released version added a Dexie schema version, rolling the client back does not roll back a user's local database. Old code must therefore tolerate a newer schema, or the rollback breaks for anyone who already upgraded. This is why every migration must be additive. See [DATA-MODEL.md](../03-ARCHITECTURE/DATA-MODEL.md).
 
+## Monitoring
+
+Neither of these costs anything.
+
+| Where | Watch for |
+|---|---|
+| Vercel dashboard | Request volume, function errors, build failures |
+| Upstash console | Daily key counts, command usage against the free-tier cap |
+
+There is no alerting, because there is no free alerting that does not involve a third-party service. Check periodically; the practical consequence of a missed problem is that generation stops, which visitors will simply see as the honest quota-exhausted message.
+
 ## Custom domain
 
 Optional. The default `<project>.vercel.app` URL is free and adequate for a portfolio link.
 
-If a domain is available, add it in the Vercel dashboard; Vercel provisions the certificate automatically. Once fixed, update `og:image`/`twitter:image` in `index.html` and `<loc>` in `public/sitemap.xml` to absolute URLs (both are currently relative placeholders, noted inline in the sitemap).
+If a domain is available, add it in the Vercel dashboard; Vercel provisions the certificate automatically. Once fixed:
+
+- Update `ALLOWED_ORIGIN` to the new domain, or the origin check will reject every request from it.
+- Update `og:image`/`twitter:image` in `index.html` and `<loc>` in `public/sitemap.xml` to absolute URLs (both are currently relative placeholders, noted inline in the sitemap).
 
 ## Costs
 
-$0 on Vercel's Hobby tier. Its terms prohibit commercial use and pause the site at the free bandwidth cap — both accepted here since this is a personal portfolio deployment, not a project inviting third-party forks to self-host at scale (see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md)). Revisit if that changes.
-
-## Turning on real AI generation
-
-Not built yet — planned, not coded, per the project owner's explicit choice. When ready:
-
-1. Get a free Gemini API key from Google AI Studio, and check its current rate limits on Google's official page (this number must never be hardcoded from memory — it changes without notice, see [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md)).
-2. Sign up for [Upstash](https://upstash.com) Redis free tier — this replaces the Workers KV quota store from the original Cloudflare plan, since Vercel Hobby has no included free key-value store.
-3. Implement `api/generate.ts` (Vercel's serverless function convention) following the shape already specified in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) and [RATE-LIMITING-AND-ABUSE.md](RATE-LIMITING-AND-ABUSE.md): origin check, kill switch, per-IP and global daily counters via Upstash, request-size cap, bring-your-own-key bypass, fail closed if Upstash is unreachable.
-4. Add `.env.example` documenting `GEMINI_API_KEY`, `GEMINI_MODEL`, `DAILY_GLOBAL_LIMIT`, `DAILY_IP_LIMIT`, `ALLOWED_ORIGIN`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
-5. Set those as environment variables in the Vercel dashboard (`GEMINI_API_KEY` and the Upstash token as **Secrets**, not plain — plain variables are readable in the dashboard and logs), for both Production and Preview. Give Preview a separate, lower-limit key if possible.
-6. Flip `IS_MOCK_MODE` to `false` in `src/ai/client.ts` and replace the three exported functions with real `fetch('/api/generate', ...)` calls — the file's own comment already describes this as the single seam.
-7. Add the two verification steps this unlocks: `GEMINI_API_KEY` never appears in the deployed JS bundle, and `/api/generate` rejects a request carrying a foreign `Origin` header.
-8. Record the change in [ACTIVITY-LOG.md](../ACTIVITY-LOG.md) and update the "Current status" note at the top of this file.
+$0. Vercel Hobby, Google AI Studio's free tier, and Upstash's free tier all stay within their limits at this project's scale. Vercel's terms prohibit commercial use and pause the site at the free bandwidth cap — both accepted here since this is a personal portfolio deployment, not a project inviting third-party forks to self-host at scale (see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md)). Confirm all three dashboards show $0 before each release, per [DEFINITION-OF-DONE.md](../05-ENGINEERING/DEFINITION-OF-DONE.md).

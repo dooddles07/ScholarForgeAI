@@ -113,6 +113,26 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (34 tests), and build all green. This was also a final end-to-end check of everything built across the session.
 
+## 2026-07-30 — The real AI proxy: shared Gemini key, no setup for visitors
+
+**Done**
+- Reversed the earlier "plan only" call on the AI proxy — the owner wants a shared key so visitors get real generated content with zero setup, per [ADR-0002](08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md)'s original design.
+- Built `api/generate.ts` (Vercel Edge Function) plus `api/_lib/security.ts` (origin check, salted IP hashing), `api/_lib/quota.ts` (Upstash-backed per-IP and global daily counters, kill switch, fail-closed), and `api/_lib/gemini.ts` (prompt assembly and JSON-schema response per kind — questions, cards, chat).
+- Grounding safety: the model only ever sees a chunk's id and text, never a page number. Every returned item is dropped unless its `chunkId` matches one actually sent, and the page numbers in the final citation always come from the app's own chunk data, never a model-claimed page.
+- `src/ai/client.ts`: `IS_MOCK_MODE` is now `import.meta.env.DEV` (was hardcoded `true`) — `npm run dev` still needs no credentials, a real build calls `/api/generate`. The three exported functions now map the proxy's response into the same `Question`/`Card`/`ChatReply` shapes the mock path always produced, so no caller changed.
+- Wired the existing-but-unused `settings.userApiKey` (BYOK) through to every generation call site (`use-generation.ts`, `use-deck.ts`) — saving a key in Settings previously did nothing at all; now it bypasses the shared quota as ADR-0002 always intended.
+- Added `.env.example` (didn't exist before) documenting all seven variables, and a matching `tsconfig.api.json` + `npm run typecheck`/`build` updates so the `api/` folder is actually type-checked.
+- Found and fixed a real, pre-existing bug while wiring this up: the root `npm run typecheck` script (`tsc --noEmit` against a references-only root `tsconfig.json`) silently checked nothing in `src/` — confirmed by deliberately introducing a type error, which `typecheck` missed but `build`'s `tsc -b` caught. Fixed by changing the script to `tsc -b` (build mode actually validates referenced projects). CI was still safe because its separate build step catches what typecheck was silently missing, but a contributor trusting `npm run typecheck` alone was getting a false pass.
+- Added `src/lib/generation-error.ts` mapping proxy error codes to the existing `quota`/`generic` copy (both already fully written in `copy/errors.ts`, never wired to anything), and wired it into the three generation call sites that previously either showed a hardcoded generic string (`use-quiz-session.ts`) or swallowed the error entirely with no message at all (`ExamPage.tsx`, `use-deck.ts`).
+- Rewrote `docs/04-OPERATIONS/DEPLOYMENT.md` and `docs/07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md` again — both previously described the proxy as unbuilt; now describe the real setup (Gemini key, Upstash database, Vercel env vars, kill switch via Upstash REST calls). Updated `README.md`'s status line, feature list, and tech table (Vercel/Vercel Edge Function, not Cloudflare).
+
+**Known follow-up, not fixed here**
+- A broader sweep found roughly twenty other docs (mostly early planning docs under `docs/01`–`docs/06`, `docs/09-SPECS/`) still reference Cloudflare, Wrangler, or Workers KV from before any code existed. Not touched in this pass — fixing all of them accurately needs its own dedicated review rather than a speculative find-and-replace.
+
+**Verified**
+- Typecheck (including the new `api/` project), lint, full test suite (37 tests), and build all green. Confirmed no secret-shaped strings (`GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, `IP_HASH_SALT`) anywhere in `dist/` after a real build.
+- Not yet verified against a live deployment: needs a real Gemini key and Upstash database in the Vercel dashboard, per the rewritten DEPLOYMENT.md.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**

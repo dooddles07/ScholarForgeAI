@@ -20,11 +20,12 @@ Last updated: 2026-07-30
 | Requirement | Cost |
 |---|---|
 | GitHub account | Free |
-| Cloudflare account | Free |
+| Vercel account | Free |
+| Upstash account | Free |
 | Google AI Studio API key | Free, no credit card |
-| Domain | Optional. You get a free `pages.dev` subdomain. |
+| Domain | Optional. You get a free `<project>.vercel.app` subdomain. |
 
-No licence fees, no usage fees, no trial that expires. Every dependency is permissively licensed, and Cloudflare's free tier explicitly permits commercial use — so a tutoring service or a school can run this without a licensing problem. That was a deliberate consideration in choosing the host. See [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md).
+No licence fees, no usage fees, no trial that expires. Every dependency is permissively licensed. Vercel's Hobby tier prohibits commercial use, so a tutoring service or school charging for access would need Vercel's Pro tier — see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) for the reasoning. Free personal or non-commercial instances are unaffected.
 
 ## Setup
 
@@ -43,30 +44,26 @@ Fork the repository on GitHub to your own account.
 
 Write that limit down. You need it in step 5, and it is the one number you should not guess — published figures vary and change.
 
-### 3. Create a Cloudflare Pages project
+### 3. Create an Upstash Redis database
 
-In the Cloudflare dashboard: Workers & Pages, then Create, then Pages, then connect your forked repository.
+At [upstash.com](https://upstash.com), create a free database, then copy its REST URL and REST token from the database dashboard.
+
+### 4. Create a Vercel project
+
+In the Vercel dashboard, import your forked repository.
 
 | Setting | Value |
 |---|---|
-| Framework preset | None |
+| Framework preset | Vite |
 | Build command | `npm run build` |
-| Build output directory | `dist` |
+| Output directory | `dist` |
 | Node version | 20 |
 
-### 4. Create the KV namespace
-
-The quota counters need somewhere to live.
-
-```bash
-npx wrangler kv namespace create QUOTA
-```
-
-Then bind it in the dashboard: Settings, Functions, KV namespace bindings. Variable name `QUOTA`.
+`api/generate.ts` deploys automatically as an Edge Function — no extra configuration.
 
 ### 5. Set the environment variables
 
-Settings, Environment variables. Set these for both Production and Preview.
+Project Settings, Environment Variables. Set these for both Production and Preview.
 
 | Variable | Type | Value |
 |---|---|---|
@@ -75,25 +72,28 @@ Settings, Environment variables. Set these for both Production and Preview.
 | `DAILY_GLOBAL_LIMIT` | Plain | Below your real daily limit |
 | `DAILY_IP_LIMIT` | Plain | Per-user daily allowance |
 | `ALLOWED_ORIGIN` | Plain | Your deployed URL |
+| `IP_HASH_SALT` | **Secret** | Any random string |
+| `UPSTASH_REDIS_REST_URL` | Plain | From step 3 |
+| `UPSTASH_REDIS_REST_TOKEN` | **Secret** | From step 3 |
 
-**`GEMINI_API_KEY` must be a Secret, not a plain variable.** Plain variables are readable in the dashboard and can appear in logs. This is the one thing in the setup you must not get wrong.
+**`GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` must be Secrets, not plain variables.** Plain variables are readable in the dashboard and can appear in logs. This is the one thing in the setup you must not get wrong.
 
 Set `DAILY_GLOBAL_LIMIT` below your real limit so your users get a clear message from the app rather than an opaque error from the provider.
 
 ### 6. Deploy
 
-Push to `main`, or trigger a deployment from the dashboard. Your instance is live at `<project>.pages.dev`.
+Push to `main`, or trigger a deployment from the dashboard. Your instance is live at `<project>.vercel.app`.
 
 ### 7. Verify
 
 - [ ] The landing page loads
-- [ ] A PDF uploads and parses
+- [ ] A PDF (or `.docx`/`.pptx`/`.epub`) uploads and parses
 - [ ] A quiz generates with page citations
 - [ ] **Search the deployed JavaScript for your API key.** It must not be there.
 - [ ] Go offline and reload; the app still opens
 - [ ] Install it to a phone home screen
 
-The key check is the one that matters. Do it by actually searching the deployed bundle, not by assuming.
+The key check is the one that matters. Do it by actually searching the deployed bundle, not by assuming — `api/` never ships to the client build since Vite only bundles `src/`.
 
 ## Picking your limits
 
@@ -113,9 +113,10 @@ The shared-NAT problem is real for schools: an entire campus may appear as one a
 |---|---|
 | Colours, fonts, spacing | `src/styles/tokens.css` — see [DESIGN-SYSTEM.md](../02-DESIGN/DESIGN-SYSTEM.md) |
 | Wording anywhere | `src/copy/` — see [CONTENT-AND-COPY-GUIDE.md](../02-DESIGN/CONTENT-AND-COPY-GUIDE.md) |
-| Name and icons | `public/manifest.webmanifest` and `public/icons/` |
-| Question style, difficulty behaviour | `functions/api/_lib/prompts.ts` — see [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md) |
-| File size and page limits | The constants in `src/parsing/` |
+| Name and icons | `index.html`'s manifest tags and `public/icons/` |
+| Question style, difficulty behaviour | `api/_lib/gemini.ts`'s `promptFor` — see [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md) |
+| Quota and abuse rules | `api/_lib/quota.ts`, `api/_lib/security.ts` |
+| File size and page limits | The constants in `src/parsing/` and `src/domain/validation/file-check.ts` |
 | Default card session length | `src/persistence/settings.ts` |
 
 Prompts are the highest-leverage thing to customise. If your students study a subject with particular conventions — legal citation, chemical notation, mathematical proof — adjusting the prompts will improve output more than any other change.
@@ -140,23 +141,26 @@ Watch for these when merging:
 
 ### Rotate your key
 
-1. Kill switch: `npx wrangler kv key put --binding=QUOTA killswitch true`
+1. Kill switch (below)
 2. Revoke the old key in AI Studio
 3. Create a new one
-4. Update the Cloudflare secret
-5. Clear the kill switch: `npx wrangler kv key delete --binding=QUOTA killswitch`
+4. Update the `GEMINI_API_KEY` secret in Vercel
+5. Clear the kill switch
 
 ### Stop generation immediately
 
 ```bash
-npx wrangler kv key put --binding=QUOTA killswitch true
+curl -X POST "$UPSTASH_REDIS_REST_URL/set/killswitch/true" \
+  -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
 ```
+
+Clear it the same way with `/del/killswitch` instead of `/set/killswitch/true`.
 
 Users keep everything they have already made, and everything still works offline. Only new generation stops.
 
 ### Watch usage
 
-Google AI Studio shows your real consumption. The Cloudflare dashboard shows traffic. `npm run stats` reads your quota counters.
+Google AI Studio shows your real consumption. The Vercel dashboard shows request traffic and function errors. The Upstash console shows your daily key counts against the free-tier command cap.
 
 ## Your obligations as a host
 
@@ -176,18 +180,18 @@ You are permitted to do whatever the licence allows. But if you change the priva
 | Problem | Likely cause |
 |---|---|
 | Build fails | Node version not set to 20 |
-| Generation returns 500 | `GEMINI_API_KEY` missing, or set as a plain variable instead of a secret |
+| Generation returns 502/503 | `GEMINI_API_KEY` missing, or `UPSTASH_REDIS_REST_URL`/`TOKEN` unset or wrong |
 | Every request returns 403 | `ALLOWED_ORIGIN` does not match your actual URL |
-| Every request returns 503 | Kill switch is still set |
-| Quota errors immediately | `DAILY_GLOBAL_LIMIT` set too low, or KV not bound |
-| Routes other than `/` return 404 | `public/_redirects` missing the SPA fallback |
-| Generation works locally but fails deployed | Server code using a Node built-in; the Workers runtime does not have them |
+| Every request returns 503 with `SERVICE_DISABLED` | Kill switch is still set |
+| Quota errors immediately | `DAILY_GLOBAL_LIMIT` or `DAILY_IP_LIMIT` set too low |
+| Routes other than `/` return 404 | Check `vercel.json`'s `rewrites` deployed correctly |
+| Generation works locally but fails deployed | An environment variable set locally in `.env` but not added in the Vercel dashboard |
 
-That last one is the most common real problem. See [CODING-STANDARDS.md](../05-ENGINEERING/CODING-STANDARDS.md).
+See [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md) for the full setup this guide summarises.
 
 ## Getting help
 
-Open an issue on the original repository. Include your Cloudflare build log and what you have already checked. Never paste your API key into an issue.
+Open an issue on the original repository. Include your Vercel build log and what you have already checked. Never paste your API key into an issue.
 
 ## Licence
 

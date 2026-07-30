@@ -22,7 +22,7 @@ export default function FlashcardsPage() {
   const { id } = useParams();
   const doc = useDocument(id);
   const cards = useDeckCards(id);
-  const { generate, generating } = useGenerateDeck();
+  const { generate, generating, error } = useGenerateDeck();
 
   if (!doc || cards === undefined) return null;
 
@@ -50,6 +50,11 @@ export default function FlashcardsPage() {
             <Button className="mt-5" disabled={generating} onClick={() => void generate(doc)}>
               {generating ? generation.cards : 'Make cards from this document'}
             </Button>
+            {error && (
+              <p role="alert" className="mt-4 text-sm text-incorrect">
+                {error}
+              </p>
+            )}
           </div>
         ) : (
           <ReviewSession

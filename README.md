@@ -6,10 +6,10 @@ Upload a PDF, slide deck, or book. Get quizzes, flashcards, plain-language expla
 
 Free forever. No account. Works on your phone. Open source.
 
-> **Status: the interface is built and runs on mock content.** Upload a PDF and it is genuinely parsed, stored, and quizzed, entirely in your browser. The questions come from local fixtures rather than a live model, because the AI proxy is not written yet.
+> **Status: the interface is built, and questions come from a real model behind a server-side proxy** ([`api/generate.ts`](api/generate.ts)) so nobody has to set anything up. Upload a PDF and it is genuinely parsed, stored, and quizzed, entirely in your browser — only the extracted text is ever sent anywhere, and only to generate what you asked for.
 >
-> Working: marketing page, library, upload and parsing, document hub, quizzes, flashcards with spaced repetition, ask-your-document, printable exams, progress, settings.
-> Not yet: the Cloudflare proxy, `.pptx` / `.docx` / `.epub`, offline support, exports.
+> Working: marketing page, library, upload and parsing (PDF, `.pptx`, `.docx`, `.epub`, text), document hub, quizzes, flashcards with spaced repetition, ask-your-document, printable exams, streaks, progress, settings, offline install, backup/Anki/Quizlet export.
+> Not yet: three-depth explanations (simple/normal/deep).
 >
 > Full design in [`docs/`](docs/README.md), build sequence in [BUILD-ORDER.md](docs/06-PLANNING/BUILD-ORDER.md), current state in [ACTIVITY-LOG.md](docs/ACTIVITY-LOG.md).
 
@@ -57,8 +57,8 @@ ScholarForge AI does the tedious part, for nothing.
 | Storage | IndexedDB via Dexie |
 | Scheduling | `ts-fsrs` |
 | Retrieval | BM25, computed locally. No embeddings. |
-| AI | Google Gemini 2.5 Flash, behind a Cloudflare Pages Function |
-| Hosting | Cloudflare Pages |
+| AI | Google Gemini 2.5 Flash, behind a Vercel Edge Function |
+| Hosting | Vercel |
 
 Every dependency is MIT, Apache-2.0, BSD, or ISC. Nothing you fork inherits a licence trap.
 
@@ -66,7 +66,7 @@ The reasoning behind each choice is in [`docs/08-DECISIONS/`](docs/08-DECISIONS/
 
 ## Running your own
 
-Takes about twenty minutes and costs nothing. You need a GitHub account, a Cloudflare account, and a free Google AI Studio key.
+Takes about twenty minutes and costs nothing. You need a GitHub account, a Vercel account, an Upstash account, and a free Google AI Studio key.
 
 Full walkthrough: [SELF-HOSTING-GUIDE.md](docs/07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md).
 
