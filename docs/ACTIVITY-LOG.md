@@ -27,6 +27,20 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (20 tests), and build all green.
 
+## 2026-07-30 — Offline support via `vite-plugin-pwa`
+
+**Done**
+- Installed `vite-plugin-pwa`, configured in `vite.config.ts`: web app manifest (name, icons, theme color, standalone display), service worker precaching the app shell.
+- Generated `public/icons/icon-192.png`, `icon-512.png`, `maskable-512.png` from the existing `favicon.svg` (one-time `sharp` conversion, then `sharp` removed — it was a dev-only tool, not a runtime dependency).
+- Added `apple-touch-icon` link to `index.html` for iOS home-screen installs, per [ADR-0007](08-DECISIONS/ADR-0007-PWA-OVER-NATIVE.md).
+- Excluded the PDF worker (1.3 MB) and the pdf/jszip vendor chunks from the service worker's precache list (`globIgnores`), and cache them at runtime instead, the first time a document of that type is actually opened. Precaching them upfront would have defeated the point of lazy-loading them (see [ADR-0005](08-DECISIONS/ADR-0005-CLIENT-SIDE-PARSING.md)).
+
+**Note for later**
+- `.github/workflows/ci.yml`'s bundle-size check picks `find dist/assets -name 'index-*.js' | head -1`, which assumed exactly one `index-*.js` chunk. Vite now also names some lazy dynamic-import chunks `index-*.js` (e.g. the chunk containing `mammoth`), so this check may not always grab the real entry chunk. Not fixed here since every current `index-*.js` chunk is still under the 300 KB gzip budget regardless of which one gets picked, but worth tightening the glob (e.g. match the hash from `dist/index.html`'s script tag) if this ever becomes a real gap.
+
+**Verified**
+- Typecheck, lint, full test suite (20 tests), and build all green. `dist/sw.js` and `dist/manifest.webmanifest` generate correctly; `dist/` stays gitignored.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**
