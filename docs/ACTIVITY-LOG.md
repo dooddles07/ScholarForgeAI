@@ -76,6 +76,23 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (34 tests), and build all green. No behaviour change.
 
+## 2026-07-30 — UI/UX pass: shadcn CLI, tooltip, motion in three places
+
+**Done**
+- Ran the real `shadcn@latest` CLI (`--base radix`, matching the Radix primitives already installed) to write `components.json`, formalizing what was previously hand-rolled without the tool. Aliases point at the project's actual structure (`@/ui/components`, `@/ui/components/primitives`), not the shadcn default `@/components/ui`.
+  - The CLI's Windows path resolution didn't pick up the `@/*` alias from `tsconfig.app.json` (it only has an empty root `tsconfig.json` referencing it), so `add` wrote files under a literal `./@/...` folder; moved by hand into `src/ui/components/primitives/` after each add.
+  - Added one new component this way: `tooltip.tsx`. Rewired its import from the CLI's default `radix-ui` unified package (not installed) to the project's existing `@radix-ui/react-tooltip`, and replaced the generated `bg-foreground`/`text-background` classes (this project has no such tokens) with the real ones (`bg-fg`/`text-bg`), plus a CSS keyframe (`.tooltip-content` in `globals.css`) instead of the Tailwind `animate-in` utilities this project doesn't have installed.
+  - Did not re-add Button/Dialog/Accordion/Switch: shadcn's current default targets Base UI, a different primitive library from the Radix packages already installed and working. Re-adding would mean adopting a second, incompatible primitive library rather than a like-for-like diff. The hand-rolled Radix versions stay as they are.
+  - Wired the new tooltip onto the one icon-only affordance in the app (the read-aloud button in `Flashcard.tsx`) — the only place a hover label actually helps, since it doesn't affect the `aria-label` mobile/screen-reader users already get.
+- Motion, in exactly three places, per `App.tsx`'s own existing comment ("Marketing carries a display webfont and the motion library. The app must not pay for either"):
+  1. **Hero entrance** (`Hero.tsx`, marketing-only, already lazy-loaded): a real `motion`-driven staggered fade/slide-up on eyebrow, headline, subhead, and the drop zone, respecting `useReducedMotion`. This is the only file importing `motion` in the whole app.
+  2. **Route transitions** (`AppLayout.tsx`): a plain CSS cross-fade (`.route-fade` in `globals.css`), keyed on `location.pathname`, not the `motion` library — the app shell must not pay for a dependency that belongs to the marketing chunk.
+  3. **Answer feedback** (`AnswerFeedback.tsx`): upgraded from the generic `.motion-enter` keyframe to a dedicated `.answer-feedback-enter` keyframe with a small overshoot-then-settle, closer to spring physics, still plain CSS.
+- Everything else (progress bars, accordions, dialogs) stays untouched and CSS-only.
+
+**Verified**
+- Typecheck, lint, full test suite (34 tests), and build all green. Marketing's lazy chunk grew to carry `motion` (~45 KB gzipped) as expected; the app's initial entry chunk is unchanged at ~87.5 KB gzipped, still well under the 300 KB CI budget.
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**

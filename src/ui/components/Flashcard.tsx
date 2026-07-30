@@ -5,6 +5,12 @@ import { previewIntervals } from '@/domain/scheduling/fsrs-adapter';
 import { intervalLabel } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/components/primitives/Button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/ui/components/primitives/tooltip';
 import { Citation } from '@/ui/components/Citation';
 import { flashcards } from '@/copy/labels';
 
@@ -82,9 +88,21 @@ export function Flashcard({ card, onRate }: { card: Card; onRate: (rating: Ratin
               pageEnd={card.citation.pageEnd}
               quote={card.citation.quote}
             />
-            <Button variant="ghost" size="icon" aria-label={flashcards.readAloud} onClick={readAloud}>
-              <Volume2 aria-hidden />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={flashcards.readAloud}
+                    onClick={readAloud}
+                  >
+                    <Volume2 aria-hidden />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{flashcards.readAloud}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
 
           {card.isLeech && (

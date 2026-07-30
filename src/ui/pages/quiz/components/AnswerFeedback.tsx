@@ -30,12 +30,12 @@ export function AnswerFeedback({
   const { isCorrect } = response;
 
   return (
-    <div>
+    <div className="answer-feedback-enter">
       {/* Colour never carries the meaning alone: an icon and a word do. */}
       <p
         role="status"
         className={cn(
-          'motion-enter flex items-center gap-2 text-xl font-semibold',
+          'flex items-center gap-2 text-xl font-semibold',
           isCorrect === true && 'text-correct',
           isCorrect === false && 'text-incorrect',
           isCorrect === null && 'text-fg-muted',

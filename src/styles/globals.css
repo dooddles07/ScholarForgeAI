@@ -222,6 +222,41 @@
   animation: motion-enter var(--duration) var(--ease) both;
 }
 
+/* A route change re-keys this wrapper, replaying the fade. Kept to a plain CSS animation, not
+   the motion library: the app shell must not pay for a dependency the marketing page owns. */
+@keyframes route-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.route-fade {
+  animation: route-fade-in var(--duration) var(--ease) both;
+}
+
+/* A quiz answer landing: a small overshoot then settle, closer to spring physics than a plain
+   fade. The moment deserves more weight than the CSS `--ease` curve gives everything else. */
+@keyframes answer-feedback-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+
+.answer-feedback-enter {
+  animation: answer-feedback-in var(--duration-slow) var(--ease) both;
+}
+
 /* Radix Dialog: overlay fades, content rises. data-state drives direction; Radix detects the
    animation end itself to unmount on close, so no JS timing is needed here. */
 @keyframes dialog-overlay-in {
@@ -290,6 +325,44 @@
 
 .dialog-content[data-state='closed'] {
   animation-name: dialog-content-out;
+}
+
+/* Radix Tooltip: a small scale-and-fade, quick enough not to feel like a dialog. */
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes tooltip-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.tooltip-content {
+  animation-duration: var(--duration-fast);
+  animation-timing-function: var(--ease);
+  animation-fill-mode: both;
+}
+
+.tooltip-content[data-state='delayed-open'],
+.tooltip-content[data-state='instant-open'] {
+  animation-name: tooltip-in;
+}
+
+.tooltip-content[data-state='closed'] {
+  animation-name: tooltip-out;
 }
 
 /* Radix Accordion: height reads from the var Radix computes on the trigger element. */
