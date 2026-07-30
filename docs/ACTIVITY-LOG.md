@@ -93,6 +93,16 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (34 tests), and build all green. Marketing's lazy chunk grew to carry `motion` (~45 KB gzipped) as expected; the app's initial entry chunk is unchanged at ~87.5 KB gzipped, still well under the 300 KB CI budget.
 
+## 2026-07-30 — SEO/share basics, brand asset check
+
+**Done**
+- Added Open Graph and Twitter Card tags to `index.html`, reusing the existing description copy, image pointed at the PWA's `icon-512.png`. `og:image`/`twitter:image` are relative paths for now — noted in the sitemap comment as a to-do once a real production domain exists (Vercel go-live, next up).
+- Added `public/sitemap.xml`, listing only `/`: everything under `/app/*` is a client-only shell over local browser data, nothing there for a crawler to index. Referenced it from `robots.txt`.
+- Checked the brand-asset question flagged in the earlier audit (`dist/brand/*.png` with no source in `public/`): confirmed it was stale build output from before the two deliberate reverts (`c4a6969`/`90542b0` reverted by `0be3fe9`/`7ca718a`), not a live gap — `dist/` is gitignored and rebuilds fresh, and a current build produces no `dist/brand/` at all. Treating the revert as final: `favicon.svg`-only is the intended state, nothing to restore.
+
+**Verified**
+- Build produces `dist/sitemap.xml` and `dist/robots.txt` correctly; no stray `dist/brand/`. Typecheck, lint, and full test suite still green (unaffected by this change).
+
 ## 2026-07-30 — Frontend built: marketing page and full app shell
 
 **Done**

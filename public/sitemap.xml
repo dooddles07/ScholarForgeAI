@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The marketing page is the only URL worth listing: everything under /app/* is a client-only
+     shell over local browser data, with nothing there for a crawler to index.
+     TODO once a production domain is fixed (see DEPLOYMENT checklist): <loc> must become an
+     absolute URL, e.g. https://scholarforge.example/ — the sitemap spec requires it, even
+     though most crawlers tolerate a relative one during development. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>/</loc>
+  </url>
+</urlset>
