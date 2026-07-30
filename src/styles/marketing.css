@@ -53,11 +53,12 @@
   }
 }
 
-/* Section content settles up into place as it enters view. Restrained: small offset, once each. */
+/* Section content settles up into place as it enters view. Was tuned too subtle to register
+   at normal scroll speed (16px, done by cover 30%) — widened so the motion reads. */
 @keyframes reveal-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(32px);
   }
   to {
     opacity: 1;
@@ -66,9 +67,9 @@
 }
 
 .reveal-up {
-  animation: reveal-up 700ms var(--ease) both;
+  animation: reveal-up 900ms var(--ease) both;
   animation-timeline: view();
-  animation-range: entry 0% cover 30%;
+  animation-range: entry 0% cover 65%;
 }
 
 @supports not (animation-timeline: view()) {
