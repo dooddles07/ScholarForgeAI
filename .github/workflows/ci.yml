@@ -52,9 +52,17 @@ jobs:
 
       - name: Check the initial bundle size
         run: |
-          MAIN=$(find dist/assets -name 'index-*.js' | head -1)
+          # dist/assets can hold more than one index-*.js chunk (lazy dynamic imports get the
+          # same prefix), so the real entry chunk is read from the one <script type="module">
+          # tag in dist/index.html rather than guessed from a directory listing.
+          MAIN_SRC=$(grep -oE '/assets/index-[^"]+\.js' dist/index.html | head -1)
+          if [ -z "$MAIN_SRC" ]; then
+            echo "Could not find the entry chunk reference in dist/index.html."
+            exit 1
+          fi
+          MAIN="dist${MAIN_SRC}"
           SIZE=$(gzip -c "$MAIN" | wc -c)
-          echo "Initial bundle: $SIZE bytes gzipped"
+          echo "Initial bundle: $MAIN ($SIZE bytes gzipped)"
           if [ "$SIZE" -gt 307200 ]; then
             echo "Over the 300 KB gzipped budget."
             exit 1
