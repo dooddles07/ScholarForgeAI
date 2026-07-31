@@ -201,6 +201,7 @@ export interface Settings {
   hasSeenInstallPrompt: boolean;
   hasSeenLocalDataWarning: boolean;
   lastExportAt: number | null;
+  lastSyncedAt: number | null;
   streakCount: number;
   streakLastDay: string;
   streakGraceUsed: boolean;

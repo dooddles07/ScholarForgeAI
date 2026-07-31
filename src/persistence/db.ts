@@ -53,6 +53,7 @@ export const DEFAULT_SETTINGS: Settings = {
   hasSeenInstallPrompt: false,
   hasSeenLocalDataWarning: false,
   lastExportAt: null,
+  lastSyncedAt: null,
   streakCount: 0,
   streakLastDay: '',
   streakGraceUsed: false,
