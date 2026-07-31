@@ -137,6 +137,17 @@ Newest entries at the top.
 - Typecheck, lint, full test suite (37 tests), and build all green.
 - Confirmed `crypto.subtle` (used in `api/_lib/security.ts`'s `hashIp`) is available as a Node global under Vercel's Node 20 runtime, so no other code needed to change for the runtime switch.
 
+## 2026-07-30 — Function invocation crash, and the free tier is much tighter than assumed
+
+**Done**
+- The Edge→Node runtime switch above didn't fix chat — it changed the failure from `504` to `500`, and the raw response showed `X-Vercel-Error: FUNCTION_INVOCATION_FAILED` with a plain-text body, meaning our own error handling never even ran. The Web-standard `(request: Request) => Response` handler signature — valid, type-checks, builds cleanly — crashed on actual invocation as a Vercel Node Function.
+- Rewrote `api/generate.ts` to Vercel's classic, long-documented Node Function signature: `(req: VercelRequest, res: VercelResponse) => Promise<void>`, using `@vercel/node`'s types (added as a dev dependency). `api/_lib/security.ts`'s `isAllowedOrigin`/`clientIp` no longer take a Fetch `Request` — they take plain header values now, decoupling the security helpers from any particular handler style.
+- Separately, checking Google AI Studio's own rate-limit dashboard while debugging surfaced a real, unrelated problem: the free tier's daily request cap on regular Flash models (`gemini-3.5-flash`, `gemini-2.5-flash`, `gemini-3.6-flash` — whichever the `gemini-flash-latest` alias happened to resolve to across different calls) measured as low as **20 requests/day for the whole project**, already exceeded from testing alone. The Lite variants (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`) measured **500/day** on the same account. Switched `GEMINI_MODEL` default to `gemini-flash-lite-latest` everywhere (code, `.env`, `.env.example`, both deploy docs) — the app's structured JSON generation from a short passage doesn't need a larger model's extra reasoning depth, and 20/day would have made the shared key nearly unusable for even light testing.
+
+**Verified**
+- Typecheck, lint, full test suite (37 tests), and build all green.
+- Not yet re-verified against the live deployment — the previous `FUNCTION_INVOCATION_FAILED` finding came from curling the live endpoint directly, but further live testing was intentionally held off this round to avoid spending more of the now-known-scarce daily quota before this fix is even deployed.
+
 ## 2026-07-30 — Post-deploy fixes: Vercel function typecheck, CSP, colour contrast
 
 **Done**

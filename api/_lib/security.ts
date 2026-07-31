@@ -1,15 +1,14 @@
 /* Origin check and IP hashing. Both are cheap, low-bar deterrents against casual scripted abuse,
    not a security boundary against a determined attacker — see RATE-LIMITING-AND-ABUSE.md. */
 
-export function isAllowedOrigin(request: Request): boolean {
+export function isAllowedOrigin(origin: string | undefined): boolean {
   const allowed = process.env.ALLOWED_ORIGIN;
   if (!allowed) return true; // unset in local/preview: origin check is skipped, not enforced
-  return request.headers.get('origin') === allowed;
+  return origin === allowed;
 }
 
-export function clientIp(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded?.split(',')[0]?.trim() ?? 'unknown';
+export function clientIp(forwardedFor: string | undefined): string {
+  return forwardedFor?.split(',')[0]?.trim() ?? 'unknown';
 }
 
 /* The IP is hashed with a server-only salt so the quota key never holds a plain address. */

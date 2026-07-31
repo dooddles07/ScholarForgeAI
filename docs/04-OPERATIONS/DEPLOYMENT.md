@@ -23,7 +23,7 @@ Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFL
 
 1. Go to Google AI Studio and sign in
 2. Create an API key
-3. Check the current rate limits for `gemini-flash-latest` on Google's official rate-limit page — this number changes without notice and must never be hardcoded, see [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md). Use the rolling alias, not a dated model id: `gemini-2.5-flash` was retired for new API keys mid-project with no warning, which is exactly what the alias avoids.
+3. Check the current rate limits for `gemini-flash-lite-latest` on Google's official rate-limit page — this number changes without notice and must never be hardcoded, see [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md). Use the rolling alias, not a dated model id: `gemini-2.5-flash` was retired for new API keys mid-project with no warning, which is exactly what the alias avoids. Use the **Lite** alias specifically: the regular Flash free-tier daily cap measured as low as 20 requests/day during this project's own testing, versus 500/day on Lite for the same account.
 
 Record that limit. It sets `DAILY_GLOBAL_LIMIT` in step 4.
 
@@ -53,7 +53,7 @@ In Project Settings, Environment Variables. Set for both Production and Preview.
 | Variable | Type | Purpose |
 |---|---|---|
 | `GEMINI_API_KEY` | **Secret** | The shared project key |
-| `GEMINI_MODEL` | Plain | `gemini-flash-latest` |
+| `GEMINI_MODEL` | Plain | `gemini-flash-lite-latest` |
 | `DAILY_GLOBAL_LIMIT` | Plain | Set **below** the provider's real daily limit (start small — 50 is a reasonable default for a personal demo) |
 | `DAILY_IP_LIMIT` | Plain | Per-visitor daily allowance (10 is a reasonable default) |
 | `ALLOWED_ORIGIN` | Plain | The deployed origin, e.g. `https://your-project.vercel.app` |

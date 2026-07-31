@@ -1,3 +1,4 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isAllowedOrigin, clientIp, hashIp } from './_lib/security.js';
 import { checkAndConsumeQuota } from './_lib/quota.js';
 import {
@@ -10,12 +11,11 @@ import {
   type RawQuestionItem,
 } from './_lib/gemini.js';
 
-/* Node runtime, not Edge: Edge Functions have a hard 25s execution ceiling that cannot be
-   raised on any plan. Gemini's "thinking" latency for a real grounded answer varies a lot
-   (observed 4-8s typical, occasionally much higher) and got clipped at 25s in testing, returning
-   a 504 the client had no way to distinguish from a real outage. Node functions allow up to 60s
-   on Hobby via maxDuration below, with the same Request-in/Response-out handler shape. */
-export const maxDuration = 60;
+/* Vercel's Node.js runtime, using its own req/res handler shape rather than the Web-standard
+   Request/Response signature: the latter crashed on invocation in production
+   (X-Vercel-Error: FUNCTION_INVOCATION_FAILED) even though it type-checked and built cleanly.
+   This is the long-documented, guaranteed-supported way to write a Node Function on Vercel. */
+export const config = { maxDuration: 60 };
 
 /* Roughly 100k tokens of safety margin under Gemini's 1M-token context window, per
    ADR-0006/RATE-LIMITING-AND-ABUSE.md's request-size limit. */
@@ -23,13 +23,6 @@ const MAX_CHARS = 400_000;
 
 interface RequestPayload extends GenerateRequestBody {
   apiKey?: string | null;
-}
-
-function json(data: unknown, status: number): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  });
 }
 
 function totalChars(chunks: GroundedChunk[]): number {
@@ -45,36 +38,48 @@ function groundedCitation(chunkId: string, quote: string, chunks: GroundedChunk[
   return { chunkId: chunk.id, pageStart: chunk.pageStart, pageEnd: chunk.pageEnd, quote };
 }
 
-export default async function handler(request: Request): Promise<Response> {
-  if (request.method !== 'POST') return json({ error: 'METHOD_NOT_ALLOWED' }, 405);
-  if (!isAllowedOrigin(request)) return json({ error: 'FORBIDDEN' }, 403);
+function header(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
-  let body: RequestPayload;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ error: 'BAD_REQUEST' }, 400);
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+    return;
+  }
+  if (!isAllowedOrigin(header(req.headers.origin))) {
+    res.status(403).json({ error: 'FORBIDDEN' });
+    return;
   }
 
-  if (!body.kind || !Array.isArray(body.chunks) || body.chunks.length === 0) {
-    return json({ error: 'BAD_REQUEST' }, 400);
+  const body = req.body as RequestPayload;
+  if (!body || !body.kind || !Array.isArray(body.chunks) || body.chunks.length === 0) {
+    res.status(400).json({ error: 'BAD_REQUEST' });
+    return;
   }
 
   if (totalChars(body.chunks) > MAX_CHARS) {
-    return json({ error: 'TEXT_TOO_LARGE' }, 413);
+    res.status(413).json({ error: 'TEXT_TOO_LARGE' });
+    return;
   }
 
   const usingOwnKey = Boolean(body.apiKey);
   let apiKey = body.apiKey ?? undefined;
 
   if (!usingOwnKey) {
-    const ipHash = await hashIp(clientIp(request));
+    const ipHash = await hashIp(clientIp(header(req.headers['x-forwarded-for'])));
     const quota = await checkAndConsumeQuota(ipHash);
-    if (!quota.ok) return json({ error: quota.reason }, quota.reason === 'QUOTA_EXCEEDED' ? 429 : 503);
+    if (!quota.ok) {
+      res.status(quota.reason === 'QUOTA_EXCEEDED' ? 429 : 503).json({ error: quota.reason });
+      return;
+    }
     apiKey = process.env.GEMINI_API_KEY;
   }
 
-  if (!apiKey) return json({ error: 'SERVICE_UNAVAILABLE' }, 503);
+  if (!apiKey) {
+    res.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
+    return;
+  }
 
   try {
     const result = await callGemini(body, apiKey);
@@ -84,7 +89,8 @@ export default async function handler(request: Request): Promise<Response> {
       const citations = chat.citations
         .map((c) => groundedCitation(c.chunkId, c.quote, body.chunks))
         .filter((c): c is NonNullable<typeof c> => c !== null);
-      return json({ content: citations.length > 0 ? chat.content : '', citations }, 200);
+      res.status(200).json({ content: citations.length > 0 ? chat.content : '', citations });
+      return;
     }
 
     const items = (result as RawQuestionItem[] | RawCardItem[]).flatMap((item) => {
@@ -93,9 +99,9 @@ export default async function handler(request: Request): Promise<Response> {
       return citation ? [{ ...rest, citation }] : [];
     });
 
-    return json({ items }, 200);
+    res.status(200).json({ items });
   } catch (error) {
     const status = error instanceof GeminiError ? error.status : 502;
-    return json({ error: 'PROVIDER_ERROR' }, status >= 500 ? 502 : status);
+    res.status(status >= 500 ? 502 : status).json({ error: 'PROVIDER_ERROR' });
   }
 }

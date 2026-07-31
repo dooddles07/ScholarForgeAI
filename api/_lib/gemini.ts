@@ -42,8 +42,12 @@ export interface RawChatResult {
 }
 
 /* A rolling alias, not a pinned version: gemini-2.5-flash was retired for new API keys without
-   notice mid-project, which is exactly the failure this avoids going forward. */
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-flash-latest';
+   notice mid-project, which is exactly the failure this avoids going forward.
+   Lite, not the full Flash alias: the free tier's daily-request cap on regular Flash models
+   measured as low as 20 requests/day across the whole project during testing, while the Lite
+   tier measured 500/day for the same account. Structured JSON generation from a short passage
+   doesn't need the larger model's extra reasoning depth. */
+const MODEL = process.env.GEMINI_MODEL ?? 'gemini-flash-lite-latest';
 
 /* The model only ever sees chunk id + text, never a page number: page numbers in the final
    citation always come from our own chunk data, never from the model's own claim. */
