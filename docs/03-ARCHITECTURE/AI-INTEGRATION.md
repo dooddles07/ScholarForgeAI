@@ -1,7 +1,7 @@
 # AI Integration
 
 Purpose: how generation works, how the key is protected, and how we keep output grounded.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Decision context in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md).
 
@@ -10,18 +10,18 @@ Decision context in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.
 ```
 Browser (src/ai/client.ts)
   │  POST /api/generate
-  │  Body: { task, text, options }
-  │  Header: X-User-Key  (only if the user supplied their own)
+  │  Body: { kind, chunks, count?, question?, apiKey? }
+  │  apiKey travels in the body, not a header — only present if the user supplied their own
   │  No project key. Nothing in the bundle to steal.
   ▼
 Vercel Node Function (api/generate.ts)
   │  1. Origin check
-  │  2. Kill switch
-  │  3. Quota: per-IP daily, then global daily
+  │  2. Body + size validation
+  │  3. If own key: validate its format. Else: per-IP daily quota, then global daily, kill switch
   │  4. Assemble prompt + JSON response schema
   │  5. Call provider
-  │  6. Validate: schema-valid? every item cited?
-  │  7. Drop ungrounded items, return the rest
+  │  6. Drop any item whose citation doesn't map back to a chunk actually sent
+  │  7. Return the rest
   ▼
 Google Gemini 2.5 Flash (free tier)
 ```
@@ -40,22 +40,25 @@ The proxy also earns three extra benefits:
 
 ## Tasks
 
-One endpoint, discriminated by `task`.
+One endpoint, discriminated by `kind`. Only three exist today.
 
-| Task | Produces |
+| Kind | Produces |
 |---|---|
-| `quiz` | An array of questions |
-| `flashcards` | An array of front/back and cloze cards |
-| `explain` | An explanation at a requested depth |
-| `exam` | Questions plus instructions and an answer key |
+| `questions` | An array of mixed-type questions (mcq, true/false, short answer, fill-in-the-blank) |
+| `cards` | An array of front/back flashcards |
 | `chat` | An answer with citations |
-| `expandQuery` | Synonyms for BM25, tier-2 retrieval only |
+
+`explain`, `exam`, and `expandQuery` are not separate proxy calls. `ExamPage.tsx` reuses
+`kind: 'questions'` with a different count rather than a dedicated exam endpoint. There is no
+depth-parameterised explanation feature built yet — "explanations at three depths" appears in
+marketing copy but not in any hook or call site. Query expansion for BM25 (`expandQuery`) was
+never built either; BM25 retrieval ([ADR-0006](../08-DECISIONS/ADR-0006-BM25-RETRIEVAL-NOT-EMBEDDINGS.md)) needs none.
 
 Prompts and schemas in [PROMPT-LIBRARY.md](PROMPT-LIBRARY.md). Wire format in [API-CONTRACTS.md](API-CONTRACTS.md).
 
 ## Structured output
 
-Every task except `chat` requests a strict JSON schema via Gemini's `responseSchema`. This is the single most valuable property of the provider choice: the model returns parseable JSON conforming to a declared shape, rather than prose we have to extract JSON from.
+Every kind except `chat` requests a strict JSON schema via Gemini's `responseSchema`. This is the single most valuable property of the provider choice: the model returns parseable JSON conforming to a declared shape, rather than prose we have to extract JSON from.
 
 Without it, the failure mode is a model wrapping JSON in a markdown fence, or trailing an apology after the closing brace, and a brittle parser trying to cope. With it, parsing is reliable.
 
@@ -79,26 +82,24 @@ Enforced in three places:
 - Does the cited page exist in the text we sent?
 - For quotes, does the quoted string actually appear in the source text, allowing for whitespace normalisation?
 
-Items failing any check are dropped before the response is returned. If more than half of a batch fails, the whole request is retried once with a stricter prompt; if it fails again, we return an honest error rather than weak content.
+Items failing any check are dropped before the response is returned. There is no retry today — a batch that loses items to grounding failure just comes back shorter than requested. `use-quiz-session.ts`'s `shortfall` and `QuizPage.tsx`'s explanatory banner already handle this case honestly on the client (say how many were dropped and why) rather than silently returning fewer.
 
 This is deliberately strict. Returning eight good questions instead of ten is fine. Returning one invented question is not.
 
 ## Retries
 
-| Condition | Behaviour |
-|---|---|
-| Network failure | Retry twice, exponential backoff, 1s then 3s |
-| Provider 429 | Retry once after the `Retry-After` interval; then quota-exhausted error |
-| Provider 5xx | Retry twice with backoff |
-| Malformed JSON | Retry once with a stricter instruction |
-| Over half of items ungrounded | Retry once with a stricter prompt |
-| Second failure of any kind | Honest error to the user, partial results kept |
+**There is no retry policy today, server- or client-side.** `api/generate.ts` calls Gemini once;
+a network failure, a 429, a 5xx, or malformed JSON all surface as a single `PROVIDER_ERROR` (or the
+provider's own status code) with no second attempt. `src/ai/client.ts` doesn't retry either — one
+`fetch`, and a non-OK response becomes a thrown `ProxyError` immediately.
 
-Retries are capped. A generous retry policy against a shared free quota burns the pool for everyone.
+This is a real gap rather than a documented design choice: a generous retry policy against a
+shared free quota would need real thought about not burning the pool, which is exactly why it
+hasn't been built casually.
 
 ## Cancellation
 
-Every request is cancellable via `AbortController`. When a user cancels, any partial result already produced is kept rather than discarded. Long generations, such as a fifty-question exam, are batched so cancelling mid-way still yields usable output.
+Every request is cancellable via `AbortController`. Generation is a single request per batch, not streamed or internally batched, so cancelling aborts the whole in-flight request — there is no partial result to keep once cancelled.
 
 ## Quota handling
 
@@ -128,7 +129,7 @@ The escape hatch that lets the product survive popularity.
 
 - User pastes a free key in settings
 - Stored in IndexedDB, in that browser only
-- Sent as a request header on that user's own requests
+- Sent in the request body on that user's own requests
 - The proxy uses it in place of the project key
 - Never logged, never persisted server-side, never sent anywhere except the provider
 
@@ -144,7 +145,9 @@ Three things this enables:
 - End-to-end tests are deterministic and consume no quota
 - Development does not burn the shared pool
 
-Enabled by an environment flag. Mock responses include the awkward cases too: an ungrounded item that validation should drop, a malformed response, and a quota-exhausted error.
+Enabled by `IS_MOCK_MODE` (`import.meta.env.DEV`). **Today this covers only the happy path** —
+`src/ai/mock/` has no fixtures for a malformed response, a quota-exhausted error, or an ungrounded
+item. A real gap for testing error handling, not a documented design choice.
 
 ## Cost control
 
@@ -152,9 +155,9 @@ Enabled by an environment flag. Mock responses include the awkward cases too: an
 |---|---|
 | Send only relevant text | Tier-2 retrieval sends chunks, not whole books |
 | Batch generation | One request for twenty questions, not twenty requests |
-| Cache aggressively | Identical generations are never repeated; results are stored locally |
+| Results persisted locally | Once generated, a quiz or deck lives in IndexedDB — reopening it never re-requests generation |
 | No embeddings | Zero calls for indexing. [ADR-0006](../08-DECISIONS/ADR-0006-BM25-RETRIEVAL-NOT-EMBEDDINGS.md) |
-| Capped retries | Failure does not multiply into quota burn |
+| No retries | A failure doesn't multiply into repeated quota burn — see "Retries" above; the flip side is a single transient failure isn't recovered from either |
 | Cheap model | Flash, not Pro |
 | Client-side where possible | Scoring, scheduling, ranking, and export all need no model at all |
 
