@@ -5,7 +5,7 @@ Last updated: 2026-07-31
 
 Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md), which supersedes [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md). Shared-key proxy design in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) and [RATE-LIMITING-AND-ABUSE.md](RATE-LIMITING-AND-ABUSE.md).
 
-**Current status:** `api/generate.ts` is built and `src/ai/client.ts` calls it in production builds (`IS_MOCK_MODE` is `import.meta.env.DEV`, so `npm run dev` still runs on fixtures with no credentials, and a real build calls the live proxy). It needs a Groq key and an Upstash Redis database to actually work once deployed — see step 4 below.
+**Current status:** `api/generate.ts` is built and `src/ai/client.ts` calls it whenever `VITE_MOCK_AI` is not `'true'` — including `npm run dev`, so local development exercises the real proxy unless a contributor opts into fixtures. It needs a Groq key and an Upstash Redis database to actually work once deployed — see step 4 below.
 
 ## Prerequisites
 
@@ -133,9 +133,9 @@ npm install
 npm run dev
 ```
 
-Runs on `src/ai/mock/` fixtures by default (`IS_MOCK_MODE` is `import.meta.env.DEV`), so **no API key or Upstash account is needed** to work on the interface. This is deliberate: it removes the biggest onboarding barrier for a contributor.
+Set `VITE_MOCK_AI=true` in `.env` to run on `src/ai/mock/` fixtures, so **no API key or Upstash account is needed** to work on the interface. This keeps the onboarding barrier low for a contributor without also making it impossible to test the real pipeline locally, which is what tying mock mode to the dev server used to do.
 
-To exercise the real function locally, copy `.env.example` to `.env`, fill in real values, then:
+To exercise the real function locally, copy `.env.example` to `.env`, fill in real values, leave `VITE_MOCK_AI` as `false`, then:
 
 ```bash
 npm run build

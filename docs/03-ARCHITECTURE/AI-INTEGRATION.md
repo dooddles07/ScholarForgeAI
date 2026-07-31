@@ -10,9 +10,8 @@ Decision context in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.
 ```
 Browser (src/ai/client.ts)
   │  POST /api/generate
-  │  Body: { kind, chunks, count?, question?, difficulty?, types?, apiKey? }
-  │  apiKey travels in the body, not a header — only present if the user supplied their own
-  │  No project key. Nothing in the bundle to steal.
+  │  Body: { kind, chunks, count?, question?, difficulty?, types? }
+  │  No key of any sort in the request. Nothing in the bundle to steal.
   ▼
 Vercel Node Function (api/generate.ts)
   │  1. Origin check
@@ -138,7 +137,9 @@ Three things this enables:
 - End-to-end tests are deterministic and consume no quota
 - Development does not burn the shared pool
 
-Enabled by `IS_MOCK_MODE` (`import.meta.env.DEV`). **Today this covers only the happy path** —
+Enabled by `IS_MOCK_MODE` (`VITE_MOCK_AI === 'true'`), an explicit opt-in rather than a property of
+the dev server — a `npm run dev` that could never reach the real pipeline hid integration breakage
+until deploy. **Today this covers only the happy path** —
 `src/ai/mock/` has no fixtures for a malformed response, a quota-exhausted error, or an ungrounded
 item. A real gap for testing error handling, not a documented design choice.
 

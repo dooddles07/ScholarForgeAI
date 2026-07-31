@@ -82,9 +82,11 @@ Project Settings, Environment Variables. Set these for both Production and Previ
 
 Set `DAILY_GLOBAL_LIMIT` below your real limit so your users get a clear message from the app rather than an opaque error from the provider.
 
-### 5b. Optional: turn on cloud sync
+### 5b. Firebase — required, not optional
 
-Only if you want it — the app works fully without it. Six more variables, all **Plain** (this is public client config, not a credential — see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) and `src/lib/firebase.ts`):
+**Every `/app/*` route is behind Google sign-in ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)), so a deployment without these six variables is one nobody can get into.** Cloud sync of study data remains opt-in per user, but Firebase itself is load-bearing.
+
+Six variables, all **Plain** (this is public client config, not a credential — see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) and `src/lib/firebase.ts`):
 
 | Variable | Type |
 |---|---|
@@ -96,6 +98,14 @@ Only if you want it — the app works fully without it. Six more variables, all 
 | `VITE_FIREBASE_APP_ID` | Plain |
 
 Get these values, enable Google sign-in, and publish `firestore.rules` per [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md)'s "Turning on cloud sync" section — the steps are the same for a fork as for the original deployment.
+
+Publishing the rules is not optional either. `userSettings/{uid}` syncs preferences for every signed-in user ([ADR-0015](../08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md)), and without the deployed rules every write to it is denied. `firebase deploy --only firestore:rules` needs a `firestore` block in `firebase.json` pointing at `firestore.rules`; the repo has one.
+
+One more variable worth setting, **Plain**:
+
+| Variable | Type | Notes |
+|---|---|---|
+| `VITE_MOCK_AI` | Plain | `true` serves fixtures and needs no Groq or Upstash account; anything else (including unset) calls the real proxy |
 
 ### 6. Deploy
 

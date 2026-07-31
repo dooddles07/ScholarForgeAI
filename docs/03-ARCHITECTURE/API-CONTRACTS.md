@@ -30,11 +30,13 @@ model picks its own mix), and an absent or empty `types` allows all four questio
 `types` is provided, the response schema's `type` enum is restricted to exactly those values —
 schema-level enforcement, not just a prompt suggestion.
 
-One flat body shape covers all three kinds — there is no per-task options union. `apiKey` travels
-in the JSON body, not a header. Each chunk already carries its own `pageStart`/`pageEnd`, so the
-server never needs a separate page-range field to validate a citation against.
+One flat body shape covers all three kinds — there is no per-task options union. Each chunk already
+carries its own `pageStart`/`pageEnd`, so the server never needs a separate page-range field to
+validate a citation against.
 
-No project API key appears anywhere in the request. There is nothing in the client bundle to extract.
+**No key of any kind appears in the request.** Since [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md)
+removed bring-your-own-key, there is no `apiKey` body field: every request uses the project's
+`GROQ_API_KEY`, read server-side from the environment. There is nothing in the client bundle to extract.
 
 **Only three kinds exist.** `explain` and `exam` are not separate proxy calls: `ExamPage.tsx` reuses
 `kind: 'questions'` with a different count, and there is no depth-parameterised explanation feature
@@ -107,12 +109,9 @@ The real sequence in `api/generate.ts`:
 2. Origin check                                     → 403
 3. Body validate (kind present, chunks non-empty)   → 400
 4. Text size check against the context-window margin → 413
-5. If apiKey supplied:
-     validate its format                            → 400 INVALID_API_KEY
-     use it, skip quota entirely
-   Else:
-     hash the IP, check per-IP and global daily counters (api/_lib/quota.ts)
-       → 429 QUOTA_EXCEEDED, 503 SERVICE_DISABLED, or 503 SERVICE_UNAVAILABLE
+5. Hash the IP, check per-IP and global daily counters (api/_lib/quota.ts)
+     → 429 QUOTA_EXCEEDED, 503 SERVICE_DISABLED, or 503 SERVICE_UNAVAILABLE
+   Every request takes this path — there is no quota-bypass branch since ADR-0014
 6. Call Groq with the assembled prompt + JSON response schema
 7. For each returned item, drop it unless its chunkId matches a chunk actually sent
 8. Return the surviving items (or chat content + citations)
@@ -155,7 +154,7 @@ Counters are integers with no identifier attached. See [SECURITY-AND-PRIVACY.md]
 
 `src/ai/client.ts` is the only file in the app that calls `fetch`. It:
 
-- Serialises requests, attaching `apiKey` to the body when the user has supplied one
+- Serialises requests: `kind`, the selected chunks, and the optional per-kind fields, nothing else
 - Supports cancellation via `AbortController`
 - Translates an error code into a domain error the UI can render (`ProxyError`, mapped by
   `src/lib/generation-error.ts`)
@@ -165,8 +164,9 @@ succeeds or fails once.
 
 ## Mock mode
 
-With `IS_MOCK_MODE` set (dev builds), `src/ai/client.ts` short-circuits to fixtures in
-`src/ai/mock/` and makes no network request.
+With `VITE_MOCK_AI=true`, `src/ai/client.ts` short-circuits to fixtures in `src/ai/mock/` and makes
+no network request. This is an explicit opt-in, not a property of the dev server: `npm run dev`
+otherwise exercises the real proxy, so integration breakage surfaces locally rather than at deploy.
 
 **Today this covers only the happy path.** `src/ai/mock/` (`document.ts`, `generate.ts`, `cards.ts`,
 `questions.ts`) has no fixtures for a malformed response, a quota-exhausted error, or an item that

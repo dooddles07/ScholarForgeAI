@@ -41,8 +41,12 @@ Follow-up after the two-device check: `navigator.storage.persist()` was firing o
 
 Privacy documentation was corrected in the same pass. [SECURITY-AND-PRIVACY.md](04-OPERATIONS/SECURITY-AND-PRIVACY.md) claimed nothing reaches Firestore without an explicit "Sync now"; preferences now sync automatically for every signed-in user, and since sign-in is mandatory that means everyone. The doc now states this in the short version, the never-collected table (`streakLastDay` is the one behavioural signal), the data-location table, and the threat table. `CLAUDE.md`'s "never crosses the network" claim carries the same correction.
 
+A follow-up sweep closed the last known documentation drift. The `task`/`X-User-Key` shape flagged in `CLAUDE.md` turned out to be already fixed; what remained was leftover bring-your-own-key from [ADR-0014](08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md). [API-CONTRACTS.md](03-ARCHITECTURE/API-CONTRACTS.md) still documented an `apiKey` body field, a client that attaches it, and a server sequence with a quota-bypass branch and an `INVALID_API_KEY` response — none of which exist. [AI-INTEGRATION.md](03-ARCHITECTURE/AI-INTEGRATION.md)'s request diagram carried the same field. Mock-mode references in both files and in [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md) still described `import.meta.env.DEV`.
+
+The sweep also caught a genuine self-hosting blocker: [SELF-HOSTING-GUIDE.md](07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md) presented Firebase as "optional — the app works fully without it," which stopped being true at [ADR-0011](08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md). A forker following that guide would have deployed an app nobody could sign into. Rewritten as required, with a note that publishing `firestore.rules` is equally non-optional now that `userSettings/{uid}` exists, and a `VITE_MOCK_AI` row added.
+
 **Next action**
-Nothing outstanding on this work. The pre-existing `AI-INTEGRATION.md` wire-protocol drift (documented `task`/`X-User-Key` shape versus `api/generate.ts`'s real `kind`/`apiKey` shape) is still open and untouched.
+Nothing outstanding.
 
 **Blockers**
 None.
