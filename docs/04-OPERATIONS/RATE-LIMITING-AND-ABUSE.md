@@ -1,7 +1,7 @@
 # Rate Limiting and Abuse
 
 Purpose: how the shared quota is protected and how running out is handled well.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## The problem
 
@@ -21,9 +21,9 @@ Applied in order, cheapest first.
 | Layer | Blocks | Cost |
 |---|---|---|
 | 1. Origin check | Casual scripted use from elsewhere | Free, no state |
-| 2. Kill switch | Everything, in an emergency | One KV read |
-| 3. Per-IP daily limit | One user draining the pool | One KV read/write |
-| 4. Global daily ceiling | The project exceeding the provider's tier | One KV read/write |
+| 2. Kill switch | Everything, in an emergency | One Upstash read |
+| 3. Per-IP daily limit | One user draining the pool | One Upstash read/write |
+| 4. Global daily ceiling | The project exceeding the provider's tier | One Upstash read/write |
 | 5. Request size limit | Oversized requests burning tokens | Free |
 
 ### 1. Origin check
@@ -34,7 +34,7 @@ This is a low bar. `Origin` is trivially forged outside a browser. It is worth h
 
 ### 2. Kill switch
 
-A KV flag checked on every request. When set, shared-key generation returns `SERVICE_DISABLED`.
+An Upstash Redis flag checked on every request. When set, shared-key generation returns `SERVICE_DISABLED`.
 
 Exists so a problem can be stopped in seconds without a deployment. Operating instructions in [DEPLOYMENT.md](DEPLOYMENT.md).
 
@@ -70,10 +70,7 @@ The threat model here is casual over-use, not a targeted attack. Defending prope
 
 A single counter for the whole project, keyed by date.
 
-Set **below** the provider's real daily limit. Two reasons:
-
-- We fail with our own clear, honest message instead of an opaque provider 429
-- KV is eventually consistent, so counters can drift slightly; the margin absorbs it
+Set **below** the provider's real daily limit, so we fail with our own clear, honest message instead of an opaque provider 429.
 
 The provider's actual figure is disputed across public sources and changes without notice, so `DAILY_GLOBAL_LIMIT` is configuration set from Google's official page before launch and reviewed quarterly. It is never hardcoded. See [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md).
 
@@ -95,9 +92,9 @@ The cost is that a user can lose an allowance unit to a provider failure. Mitiga
 
 ## Fail closed
 
-If KV is unavailable and a counter cannot be read or written, we **refuse the request** rather than allowing it.
+If Upstash is unavailable and a counter cannot be read or written, we **refuse the request** rather than allowing it.
 
-The reasoning: allowing unlimited requests during a KV outage could burn the provider's entire daily allowance in minutes and potentially get the key rate-limited or flagged. A brief outage in which generation is unavailable is much less damaging than that.
+The reasoning: allowing unlimited requests during an Upstash outage could burn the provider's entire daily allowance in minutes and potentially get the key rate-limited or flagged. A brief outage in which generation is unavailable is much less damaging than that.
 
 Everything stored keeps working, as always.
 
@@ -127,16 +124,17 @@ This is a designed state that is expected to occur, not an error. Handling it we
 
 ### Warning before the wall
 
-When `quotaRemaining` gets low, the interface says so before the user hits zero — a quiet note that a few generations remain today.
-
-This matters. A user two generations from the limit should be able to decide what to spend them on, rather than discovering the wall mid-task.
+Not built today. There is no `quotaRemaining` value anywhere in the real response
+(`api/generate.ts` returns only `items` or `content`/`citations` on success), so the interface has
+no way to warn a user before they hit zero — they only find out at the moment a request actually
+fails. A real gap, not a documented design choice.
 
 ## Bring your own key
 
 The mechanism that makes the whole design work.
 
 - Stored in the user's browser only
-- Sent as a header on that user's own requests
+- Sent in the request body on that user's own requests
 - Bypasses every quota layer
 - Never logged, never stored server-side
 
@@ -166,11 +164,12 @@ Aggregate counters only, no identifiers.
 | Counter | Watch for |
 |---|---|
 | Daily global requests | Approaching the ceiling |
-| Quota-exhaustion events | Consistently early in the day means the shared key is undersized |
-| Per-IP limit hits | A sudden rise may indicate abuse, or may indicate a campus behind one address |
-| Error counts by code | Provider instability |
+| Per-IP daily requests | A sudden rise may indicate abuse, or may indicate a campus behind one address |
 
-If exhaustion happens before noon most days, the response is not to buy capacity. It is to promote bring-your-own-key more prominently and consider adding a fallback provider.
+That's the complete set `api/_lib/quota.ts` tracks — no separate exhaustion-event or per-error-code
+counters exist. If the global counter is consistently maxed out early in the day, the response is
+not to buy capacity. It is to promote bring-your-own-key more prominently and consider adding a
+fallback provider.
 
 Detail in [MONITORING-AND-LIMITS.md](MONITORING-AND-LIMITS.md).
 
