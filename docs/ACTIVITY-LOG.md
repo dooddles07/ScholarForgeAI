@@ -10,13 +10,13 @@ Newest entries at the top.
 ## 2026-07-31 — Optional cloud sync feature complete: Firebase Auth + Firestore
 
 **Done**
-- **Tasks 1–6 combined:** Built the full optional cloud sync feature per [ADR-0010](08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md). Feature is entirely opt-in and has zero impact on users who never sign in.
-  - Firebase Auth initialization and provider setup (`src/lib/firebase.ts`, `initFirebase`, `getFirebaseApp`). Public config values are injected via environment variables at build time; no credentials ever enter the client bundle.
-  - Firestore Realtime Database reader (`src/persistence/sync.ts`, `readSyncPayload`, `writeSyncPayload`) and backup-restore flow: when a user signs in on a new device, the app checks Firestore for a backup from another device signed into the same account. If found, it offers to restore it via a merge operation that imports everything without deleting any existing local data.
-  - Settings page (`src/ui/pages/SettingsPage.tsx`) wired to sign in/out via Google, manually trigger sync-now on demand, and import a backup file via a file picker.
-  - Sync endpoint API (`api/_lib/sync-payload.ts`, `POST /api/sync`) that handles signed-in requests from the client, verifies the caller's identity via Firebase ID token, and reads/writes to Firestore.
+- **Tasks 1–6 combined:** Built the full optional cloud sync feature per [ADR-0010](08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md). Feature is entirely opt-in and has zero impact on users who never sign in. Architecture is client-only: the Firebase JS SDK talks directly to Firestore from the browser, with access control enforced entirely by security rules (no server-side proxy).
+  - Firebase Auth initialization (`src/lib/firebase.ts`, exports `firebaseAuth()`, `firestore()`, `googleProvider`). Public config values are injected via `VITE_FIREBASE_*` environment variables at build time; no credentials ever enter the client bundle.
+  - Cloud Firestore backup push/pull (`src/persistence/sync.ts`, exports `pushBackupToCloud` and `pullBackupFromCloud`). When a user signs in on a new device, the hook checks Firestore (path: `backups/{uid}`) for a backup from another device signed into the same account. If found, it's offered for restore via a merge operation that imports everything without deleting any existing local data.
+  - Hook (`src/hooks/use-cloud-sync.ts`, exports `useCloudSync()`): manages auth state, backup detection, and sync-now orchestration. Entirely dynamic imports to keep the Firebase SDK out of the main bundle until Settings actually opens the sync section.
+  - Settings UI (`src/ui/pages/settings/CloudSyncSection.tsx`): wired to sign in/out via Google, manually trigger sync-now, display sync status and last-synced timestamp, and offer backup restore when one is detected on sign-in.
   - Backup merge logic ensures sign-out never deletes locally-stored documents, quizzes, or cards — the user's device-local work is always safe.
-  - Database security rules (`firestore.rules`): locked to authenticated users only; each user can read and write only their own document under `users/{uid}/backup`. Deny everything else.
+  - Database security rules (`firestore.rules`): each authenticated user can only read and write their own document at `backups/{uid}`. All other paths denied. No credentials are checked server-side; all access control is Firestore's responsibility.
 - **Task 7 (this task):** Verification only, no code changes.
   - Full local check: `npm run typecheck && npm run lint && npm test && npm run build` — all pass. TypeScript strict mode, 41 unit tests across 9 test files, build 5.78s.
   - Bundle isolation confirmed via `grep -rl "firebase" dist/assets/index-*.js` — no matches. Firebase and all its dependencies are in `dist/assets/firebase-BlHV8pKt.js` (502.87 KB raw, 132.39 KB gzipped), a separate lazy-loaded chunk. The main app entry chunk (`index-DjV_JkrW.js`, 271.29 KB raw, 87.90 KB gzipped) carries zero Firebase code and stays under the 300 KB gzip budget.
@@ -35,7 +35,7 @@ For setup steps, see [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md)'s "Turning on 
 **Verified**
 - Typecheck (app + `api/` folder), lint, full test suite (41 tests), and build all green.
 - Bundle isolation: Firebase in a separate lazy chunk, not in the main entry point.
-- Accessibility and CSP unchanged from prior verification.
+- No UI or CSP-related files were touched by this feature (Task 7 ran automated checks only).
 
 ---
 
