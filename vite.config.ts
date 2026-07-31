@@ -72,5 +72,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],
     globals: true,
+    /* Vitest's default excludes cover node_modules/dist but not a nested worktree checkout under
+       .claude/ (gitignored, but still on disk) -- without this, its own test files run a second
+       time alongside the real ones. */
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
   },
 } as Parameters<typeof defineConfig>[0]);
