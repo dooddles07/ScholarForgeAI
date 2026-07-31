@@ -3,9 +3,9 @@ import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 /*
- * This file is only ever reached via a dynamic import() from src/hooks/use-cloud-sync.ts, never
- * a static import — that keeps the whole Firebase SDK out of the app's main bundle for the
- * majority of visitors who never open Settings' sync section.
+ * This file is only ever reached via a dynamic import(), never a static import — that keeps the
+ * whole Firebase SDK out of the marketing page's bundle. It is loaded once a visitor enters
+ * /app/* (src/hooks/use-auth-user.ts), which is required since sign-in gates the whole app.
  *
  * The config values below are Firebase's public client identifiers, not secrets: Firebase's own
  * security model expects them to be visible in the bundle and enforces access control via
