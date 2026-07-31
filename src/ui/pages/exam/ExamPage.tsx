@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useParams } from 'react-router';
 import { Printer } from 'lucide-react';
-import type { Question } from '@/domain/types';
+import type { ExamConfig } from '@/domain/types';
 import { useDocument } from '@/hooks/use-documents';
 import { useAppearance } from '@/hooks/use-settings';
-import { useGenerateQuestions } from '@/hooks/use-generation';
+import { useExam } from '@/hooks/use-exam';
 import { PageHeader } from '@/ui/components/PageHeader';
 import { Button } from '@/ui/components/primitives/Button';
 import { exam as examCopy, generation } from '@/copy/labels';
 import { generationErrorMessage } from '@/lib/generation-error';
+import { ExamConfigForm } from './components/ExamConfigForm';
 import { ExamPaper } from './ExamPaper';
 import '@/styles/print.css';
 
@@ -16,20 +17,18 @@ export default function ExamPage() {
   useAppearance();
   const { id } = useParams();
   const doc = useDocument(id);
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const { exam, build } = useExam(doc ?? undefined);
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'exam' | 'key'>('exam');
-  const generateQuestions = useGenerateQuestions();
 
   if (!doc) return null;
 
-  async function build() {
-    if (!doc) return;
+  async function start(config: ExamConfig) {
     setBuilding(true);
     setError(null);
     try {
-      setQuestions(await generateQuestions(doc, 10));
+      await build(config);
     } catch (err) {
       setError(generationErrorMessage(err));
     } finally {
@@ -42,14 +41,16 @@ export default function ExamPage() {
       <PageHeader title={examCopy.heading} meta={doc.title} backTo={`/app/doc/${doc.id}`} />
 
       <div className="px-4 pt-6 md:px-8">
-        {questions.length === 0 ? (
-          <div className="mx-auto max-w-md">
+        {!exam ? (
+          <div className="mx-auto max-w-xl">
             <p className="text-base text-fg-muted">
               A full paper with a separate answer key, sized to print on A4.
             </p>
-            <Button className="mt-5" disabled={building} onClick={() => void build()}>
-              {building ? generation.exam : examCopy.generate}
-            </Button>
+            {building ? (
+              <p className="mt-5 text-base text-fg-muted">{generation.exam}</p>
+            ) : (
+              <ExamConfigForm onStart={(config) => void start(config)} />
+            )}
             {error && (
               <p role="alert" className="mt-4 text-sm text-incorrect">
                 {error}
@@ -86,10 +87,15 @@ export default function ExamPage() {
 
             <div className="print-exam mt-6 grid gap-10 lg:grid-cols-2">
               <div className={tab === 'exam' ? '' : 'hidden lg:block'}>
-                <ExamPaper title={doc.title} questions={questions} />
+                <ExamPaper
+                  title={exam.title}
+                  questions={exam.questions}
+                  timeLimitMinutes={exam.config.timeLimitMinutes}
+                  marksPerQuestion={exam.config.marksPerQuestion}
+                />
               </div>
               <div className={tab === 'key' ? 'print-answer-key' : 'hidden lg:block'}>
-                <ExamPaper title={doc.title} questions={questions} answerKey />
+                <ExamPaper title={exam.title} questions={exam.questions} answerKey />
               </div>
             </div>
           </div>

@@ -122,6 +122,7 @@ export const chat = {
 
 export const exam = {
   heading: 'Build a practice exam',
+  count: 'How many questions',
   timeLimit: 'Time limit (optional)',
   marks: 'Marks per question (optional)',
   generate: 'Build my exam',

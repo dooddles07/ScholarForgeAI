@@ -62,6 +62,10 @@ export function getConversationForDocument(documentId: string): Promise<Conversa
   return db.conversations.where('documentId').equals(documentId).first();
 }
 
+export function getExamForDocument(documentId: string): Promise<Exam | undefined> {
+  return db.exams.where('documentId').equals(documentId).first();
+}
+
 export async function deleteEverything(): Promise<void> {
   await Promise.all(db.tables.map((table) => table.clear()));
 }

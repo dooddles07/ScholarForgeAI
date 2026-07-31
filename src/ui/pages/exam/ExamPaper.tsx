@@ -14,11 +14,24 @@ export function ExamPaper({
   title,
   questions,
   answerKey = false,
+  timeLimitMinutes = null,
+  marksPerQuestion = null,
 }: {
   title: string;
   questions: Question[];
   answerKey?: boolean;
+  timeLimitMinutes?: number | null;
+  marksPerQuestion?: number | null;
 }) {
+  const meta = [
+    `${questions.length} questions`,
+    timeLimitMinutes ? `${timeLimitMinutes} minutes` : null,
+    marksPerQuestion ? `${marksPerQuestion} ${marksPerQuestion === 1 ? 'mark' : 'marks'} each` : null,
+    'name and date at the top',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <section>
       <header className="border-b border-line pb-3">
@@ -26,9 +39,7 @@ export function ExamPaper({
           {answerKey ? exam.answerKey : title}
         </h2>
         {!answerKey && (
-          <p className="mt-1 font-mono text-xs tabular text-fg-muted">
-            {questions.length} questions &middot; name and date at the top
-          </p>
+          <p className="mt-1 font-mono text-xs tabular text-fg-muted">{meta}</p>
         )}
       </header>
 
