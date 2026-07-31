@@ -81,4 +81,11 @@ export default tseslint.config(
       deny('persistence', 'The AI layer does not store.'),
     ]),
   },
+  /* The boundaries above govern what ships. A test asserting that a control actually persisted
+     has to read the database to do it, and routing that through a hook would test the hook
+     instead of the component. */
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    rules: { 'no-restricted-imports': 'off' },
+  },
 );
