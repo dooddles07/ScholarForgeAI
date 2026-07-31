@@ -68,6 +68,11 @@ describe('mergeSettings', () => {
     expect(mergeSettings(local, { ...remote, updatedAt: 1000 })).toBe(local);
   });
 
+  it('treats a row written before sync existed as older than anything remote', () => {
+    const legacy = { ...local, updatedAt: undefined } as unknown as Settings;
+    expect(mergeSettings(legacy, remote).theme).toBe('dark');
+  });
+
   it('clamps a remote limit that skipped the client check', () => {
     expect(mergeSettings(local, { ...remote, dailyCardLimit: 9999 }).dailyCardLimit).toBe(200);
   });

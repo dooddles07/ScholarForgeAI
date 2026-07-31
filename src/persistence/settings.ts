@@ -4,9 +4,18 @@ import { db, DEFAULT_SETTINGS } from './db';
 
 export async function getSettings(): Promise<Settings> {
   const row = await db.settings.get('singleton');
-  if (row) return row;
-  await db.settings.put(DEFAULT_SETTINGS);
-  return DEFAULT_SETTINGS;
+  if (!row) {
+    await db.settings.put(DEFAULT_SETTINGS);
+    return DEFAULT_SETTINGS;
+  }
+  /* Rows written before preferences could sync have no updatedAt. Treated as older than any
+     remote copy, and filled in so the first push carries a real number rather than undefined. */
+  if (typeof row.updatedAt !== 'number') {
+    const filled = { ...row, updatedAt: 0 };
+    await db.settings.put(filled);
+    return filled;
+  }
+  return row;
 }
 
 /* Clamping here rather than in the component covers every writer: the settings form, the streak

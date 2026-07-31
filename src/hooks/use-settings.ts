@@ -2,7 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Settings } from '@/domain/types';
 import { db, DEFAULT_SETTINGS } from '@/persistence/db';
-import { updateSettings } from '@/persistence/settings';
+import { getSettings, updateSettings } from '@/persistence/settings';
 
 /*
  * The live query is read-only. Dexie runs it inside a read transaction, so seeding the default
@@ -11,10 +11,9 @@ import { updateSettings } from '@/persistence/settings';
 export function useSettings() {
   const stored = useLiveQuery(() => db.settings.get('singleton'), [], undefined);
 
+  /* getSettings both seeds the row and backfills updatedAt on one written before sync existed. */
   useEffect(() => {
-    void db.settings.get('singleton').then((row) => {
-      if (!row) void db.settings.put(DEFAULT_SETTINGS);
-    });
+    void getSettings();
   }, []);
 
   const update = useCallback(async (patch: Partial<Omit<Settings, 'id'>>) => {

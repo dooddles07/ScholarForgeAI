@@ -60,8 +60,9 @@ export function useSettingsSync(): void {
   }, [uid]);
 
   useEffect(() => {
-    /* updatedAt of 0 means the row is still the seeded default, with nothing worth sending. */
-    if (!uid || settings.updatedAt === 0 || settings.updatedAt <= settledAtRef.current) {
+    /* 0 means the row is still the seeded default, or predates sync: nothing worth sending, and
+       a legacy row without the field at all must never be pushed as undefined. */
+    if (!uid || !settings.updatedAt || settings.updatedAt <= settledAtRef.current) {
       return undefined;
     }
 

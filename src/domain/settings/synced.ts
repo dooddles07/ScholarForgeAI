@@ -60,7 +60,8 @@ export function isSyncedSettings(value: unknown): value is SyncedSettings {
 /* Last write wins. Returns the same object when the remote copy is not newer, so a caller can
    compare by reference and skip a needless database write. */
 export function mergeSettings(local: Settings, remote: SyncedSettings): Settings {
-  if (remote.updatedAt <= local.updatedAt) return local;
+  /* A row written before preferences could sync has no timestamp, so anything remote is newer. */
+  if (remote.updatedAt <= (local.updatedAt ?? 0)) return local;
   return {
     ...local,
     ...remote,
