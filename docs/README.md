@@ -64,7 +64,7 @@ ScholarForge AI turns your study material into practice. Upload a PDF, slide dec
 | Document | Covers |
 |---|---|
 | [ZERO-COST-INFRASTRUCTURE.md](04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md) | Every service, its free limit, what breaks at the cap |
-| [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md) | Cloudflare Pages setup, secrets, CI |
+| [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md) | Vercel setup, secrets, CI |
 | [SECURITY-AND-PRIVACY.md](04-OPERATIONS/SECURITY-AND-PRIVACY.md) | Key protection, no-PII stance, threat model |
 | [RATE-LIMITING-AND-ABUSE.md](04-OPERATIONS/RATE-LIMITING-AND-ABUSE.md) | Quota enforcement and graceful degradation |
 | [MONITORING-AND-LIMITS.md](04-OPERATIONS/MONITORING-AND-LIMITS.md) | Quota visibility and the kill switch |

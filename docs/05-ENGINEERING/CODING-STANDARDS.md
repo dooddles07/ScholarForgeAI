@@ -144,7 +144,7 @@ The most important rule in the codebase. Enforced by ESLint `no-restricted-impor
 |---|---|
 | `ui/` | `parsing/`, `persistence/`, `ai/` directly |
 | `domain/` | anything with I/O, React, or browser APIs |
-| `functions/` | anything under `src/` |
+| `api/` | anything under `src/` |
 
 A component importing Dexie can no longer be tested without a database. A domain module importing `fetch` can no longer be tested without a network. The boundaries exist to keep testing cheap.
 
@@ -152,16 +152,9 @@ Full table in [PROJECT-STRUCTURE.md](../03-ARCHITECTURE/PROJECT-STRUCTURE.md).
 
 ## Server-side code
 
-`functions/` runs on the Cloudflare Workers runtime, **not Node**.
+`api/` runs on Vercel's Node.js runtime (Node 20) — the same environment as local development. No restricted API surface: Node built-ins, `fetch`, and Web standard APIs (`crypto.subtle`, `TextEncoder`/`TextDecoder`) are all available. See [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md).
 
-| Allowed | Not available |
-|---|---|
-| `fetch`, `Request`, `Response` | `fs`, `path`, `process` |
-| `crypto.subtle` | Node's `crypto` |
-| `TextEncoder`, `TextDecoder` | `Buffer` |
-| Web standard APIs | Most npm packages assuming Node |
-
-A package that works locally under Node will fail in production if it depends on Node built-ins. Test the function with Wrangler, not a Node dev server. See [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md).
+`api/generate.ts` specifically uses Vercel's classic `(req: VercelRequest, res: VercelResponse)` handler signature via `@vercel/node` — the Web-standard `(request: Request) => Response` signature type-checks and builds but crashes on actual invocation (`FUNCTION_INVOCATION_FAILED`), a real bug hit during this project's own deploy.
 
 ## Errors
 

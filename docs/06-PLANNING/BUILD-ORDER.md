@@ -9,7 +9,7 @@ Tasks are ordered so that each one can be verified when it is finished. Nothing 
 
 ## Milestone 0 — Skeleton
 
-**Exit criteria:** an empty page deployed to Cloudflare with CI green.
+**Exit criteria:** an empty page deployed to Vercel with CI green.
 
 1. `npm create vite@latest` with the React + TypeScript template
 2. Configure TypeScript strict mode, including `noUncheckedIndexedAccess`, per [CODING-STANDARDS.md](../05-ENGINEERING/CODING-STANDARDS.md)
@@ -19,9 +19,9 @@ Tasks are ordered so that each one can be verified when it is finished. Nothing 
 6. Configure ESLint, including `no-restricted-imports` for the layer boundaries
 7. Configure Prettier and a pre-commit hook that formats, lints, and scans for key-shaped strings
 8. Add React Router with placeholder routes
-9. Add `public/_headers` and `public/_redirects`, per [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md)
+9. Add security headers and the SPA rewrite to `vercel.json`, per [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md)
 10. Write `.github/workflows/ci.yml` with typecheck, lint, test, build, bundle size, and secret scan
-11. Create the Cloudflare Pages project and deploy
+11. Create the Vercel project and deploy
 
 **Do step 6 now, not later.** The layer boundaries are the most important structural rule in the codebase, and retrofitting the lint rule after the fact means fixing dozens of violations.
 
@@ -85,10 +85,10 @@ Get the schema right now. Changing it later means writing a migration and testin
 
 **Exit criteria:** a quiz generates end to end, and the key is not in the bundle.
 
-1. Write `functions/api/generate.ts`, Web-standard APIs only
+1. Write `api/generate.ts` as a Vercel Node Function
 2. Implement the origin check
-3. Create the KV namespace; implement `_lib/quota.ts` with per-IP and global counters and the kill switch
-4. Implement `_lib/prompts.ts` with the shared system instruction and the quiz prompt from [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md)
+3. Create the Upstash Redis database; implement `_lib/quota.ts` with per-IP and global counters and the kill switch
+4. Implement the shared system instruction and the quiz prompt from [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md)
 5. Implement `_lib/schemas.ts` with the quiz response schema
 6. Call Gemini with structured output
 7. Implement `_lib/validate.ts`: schema conformance, then grounding checks

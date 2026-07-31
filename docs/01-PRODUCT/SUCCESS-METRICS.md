@@ -33,7 +33,7 @@ Design note: these must never become guilt mechanics. No red warnings for a brok
 | Error rate by type | Proxy counters, aggregate only | Whether parsing or generation is failing in the field |
 | Quota-exhaustion events per day | Proxy counter | Whether the shared key is sufficient |
 | GitHub stars, forks, issues | GitHub | Interest and contributor pull |
-| Cloudflare Pages request count | Cloudflare dashboard | Rough traffic shape |
+| Vercel request count | Vercel dashboard | Rough traffic shape |
 
 Every one of these is a counter with no user identifier, no IP retention beyond the rate-limit window, and no request content. Detail in [MONITORING-AND-LIMITS.md](../04-OPERATIONS/MONITORING-AND-LIMITS.md).
 

@@ -11,7 +11,7 @@ So monitoring is built from two things that cost nothing: counters we increment 
 
 ## What we count
 
-All in Workers KV. All plain integers. No identifier attached to any of them.
+All in Upstash Redis. All plain integers. No identifier attached to any of them.
 
 | Counter | Key | Purpose |
 |---|---|---|
@@ -38,22 +38,18 @@ The BYOK counter is the most strategically interesting number in the project. It
 
 | Dashboard | Shows | Cost |
 |---|---|---|
-| Cloudflare Pages | Requests, bandwidth, build history and failures | Free |
-| Cloudflare Workers | Function invocations, errors, CPU time | Free |
-| Workers KV | Read/write volume against the free allowance | Free |
+| Vercel | Requests, bandwidth, build history and failures | Free |
+| Vercel Functions | Invocations, errors, execution duration | Free |
+| Upstash Redis | Command volume against the free allowance | Free |
+| Firebase | Auth and Firestore usage against the Spark plan quota | Free |
 | Google AI Studio | Actual API usage against the real quota | Free |
 | GitHub | Issues, stars, forks, Actions minutes | Free |
 
-The Google AI Studio figure is the authoritative one. Our own global counter is an approximation that runs slightly behind because KV is eventually consistent, which is exactly why the ceiling is set below the real limit.
+The Google AI Studio figure is the authoritative one. Our own global counter is an approximation, which is exactly why the ceiling is set below the real limit.
 
 ## Reading the counters
 
-```bash
-npx wrangler kv key get --binding=QUOTA "global:2026-07-30"
-npx wrangler kv key list --binding=QUOTA --prefix="err:"
-```
-
-A small script, `npm run stats`, prints the current day's counters in a readable table. Worth having, because a command that takes one keystroke actually gets run.
+Counters are read from the Upstash console's Data Browser, or via its REST API with `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` (the same credentials `api/_lib/quota.ts` uses), e.g. `curl -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN" $UPSTASH_REDIS_REST_URL/get/global:2026-07-30`.
 
 ## What to watch, and what it means
 
@@ -65,7 +61,7 @@ A small script, `npm run stats`, prints the current day's counters in a readable
 | `GROUNDING_FAILED` rising | Prompt quality regression | Review recent prompt changes in [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md) |
 | `TEXT_TOO_LARGE` rising | People uploading bigger documents than expected | Check the retrieval tier logic |
 | Per-IP limit hits rising | Abuse, or a shared network | Usually a shared network. Leave it. BYOK is the answer. |
-| KV writes near the free allowance | Unexpected; would mean enormous traffic | Reduce counter granularity |
+| Upstash command volume near the free allowance | Unexpected; would mean enormous traffic | Reduce counter granularity |
 | Sudden implausible spike | Possible abuse or key leak | Kill switch, investigate, rotate if needed |
 | Build failures | A broken commit | Fix; check CI passed before merge |
 | Traffic but almost no AI requests | People land and leave without uploading | A landing page problem, not an infrastructure one. See [SUCCESS-METRICS.md](../01-PRODUCT/SUCCESS-METRICS.md) |
@@ -80,7 +76,7 @@ The practical consequence: if generation breaks, we find out when a user opens a
 
 What compensates:
 
-- **Fail closed.** A KV outage disables generation rather than allowing unlimited use, so a failure cannot quietly burn the quota.
+- **Fail closed.** An Upstash outage disables generation rather than allowing unlimited use, so a failure cannot quietly burn the quota.
 - **The global ceiling caps damage.** The worst case is a spent daily quota, which resets.
 - **The kill switch is one command.** Any problem can be stopped in seconds.
 - **An in-app report link** opens a pre-filled GitHub issue, so a user who hits a problem has an easy path to telling us. Nothing is sent automatically.
@@ -92,7 +88,7 @@ What compensates:
 | Weekly | Global daily counter, exhaustion events, error counts |
 | Weekly | GitHub issues |
 | Monthly | Google AI Studio usage against our counter, to confirm they agree |
-| Monthly | Cloudflare dashboard shows $0 |
+| Monthly | Vercel, Upstash, and Firebase dashboards show $0 |
 | Quarterly | `DAILY_GLOBAL_LIMIT` against Google's current published limit |
 | Quarterly | `npm audit` and dependency updates |
 | Per release | The full checklist in [DEFINITION-OF-DONE.md](../05-ENGINEERING/DEFINITION-OF-DONE.md) |
@@ -134,9 +130,9 @@ Everything with a ceiling, in one table.
 |---|---|---|
 | Gemini daily requests | Configured, below the provider's real limit | Honest message, reset time, BYOK offered |
 | Per-IP daily requests | Configured, generous | Same message, BYOK offered |
-| Pages Functions | Approx. 100k requests/day | Generation fails; the app still loads and offline works |
-| Workers KV | Free daily allowance | Fail closed: generation disabled |
-| Pages builds | 500/month | Builds queue; the live site keeps serving |
+| Vercel Node Functions | 60s max duration, generous monthly invocation allowance | Generation fails; the app still loads and offline works |
+| Upstash Redis | 256 MB / 500K commands per month | Fail closed: generation disabled |
+| Vercel builds | Soft fair-use cap on Hobby | Builds pause; see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) |
 | File upload size | 50 MB | Rejected before parsing, with the size named |
 | Pages per document | 1,000 | Warned, page range offered |
 | Documents per study set | 10 | Rejected, second set suggested |

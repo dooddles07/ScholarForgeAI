@@ -143,7 +143,7 @@ Keep a Changelog format, grouped as Added, Changed, Fixed, Removed. Written from
 
 `git revert` on `main`, never a force push. `main` is deployed and may be checked out by contributors; rewriting it breaks their clones.
 
-If a release needs pulling urgently, promote the previous Cloudflare deployment from the dashboard first, then revert in git. That gets the site fixed in seconds rather than waiting for a build.
+If a release needs pulling urgently, promote the previous Vercel deployment from the dashboard first, then revert in git. That gets the site fixed in seconds rather than waiting for a build.
 
 **One caution.** If the reverted version added a Dexie schema version, reverting the client does not revert a user's local database. Old code must tolerate a newer schema, which is why every migration is additive. See [DATA-MODEL.md](../03-ARCHITECTURE/DATA-MODEL.md).
 

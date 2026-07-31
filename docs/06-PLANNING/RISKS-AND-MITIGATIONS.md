@@ -38,7 +38,7 @@ A leaked key gets drained by strangers, and the consequence lands on the project
 
 **Already mitigated**
 
-- The key is never in the client bundle. It lives only in Cloudflare environment secrets. This is structural, not procedural, and it is the entire reason the proxy exists. See [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md).
+- The key is never in the client bundle. It lives only in Vercel environment variables. This is structural, not procedural, and it is the entire reason the proxy exists. See [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md).
 - A pre-commit hook scans staged changes for key-shaped strings.
 - CI scans the built bundle and fails on a match.
 - Tests assert the key never appears in any response, header, or error.
@@ -132,7 +132,7 @@ A free tier measured in hundreds of daily requests, shared across all users.
 
 **Likelihood: medium over a multi-year horizon. Impact: medium.**
 
-Free tiers get worse. Gemini's rate limits could shrink, Cloudflare's terms could change.
+Free tiers get worse. Gemini's rate limits could shrink, Vercel's or Upstash's terms could change.
 
 **Already mitigated**
 

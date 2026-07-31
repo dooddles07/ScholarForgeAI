@@ -26,11 +26,10 @@ This is deliberate. Requiring an API key before someone can see the app run woul
 Only needed if you are changing prompts or the proxy itself.
 
 1. Get a free key from Google AI Studio
-2. Put it in `.env` as `GEMINI_API_KEY`
-3. Set `VITE_MOCK_AI=false`
-4. `npm run build && npx wrangler pages dev dist --kv QUOTA`
+2. Put it in `.env` as `GEMINI_API_KEY`, along with an Upstash Redis database's REST credentials (see `.env.example`)
+3. `npx vercel dev`
 
-Wrangler is required because the proxy runs on the Cloudflare Workers runtime, not Node. A plain dev server cannot reproduce it, and code that works under Node may fail in production.
+`api/` runs on Vercel's Node.js runtime, the same as any other Node code — no special tooling needed to reproduce it locally, unlike the Cloudflare Workers runtime this project used to target.
 
 ### Commands
 

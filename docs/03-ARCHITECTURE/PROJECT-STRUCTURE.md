@@ -8,14 +8,12 @@ Last updated: 2026-07-30
 ```
 ScholarForgeAI/
 ├── docs/                          planning documentation (this folder)
-├── functions/                     Cloudflare Pages Functions
-│   └── api/
-│       ├── generate.ts            the AI proxy, the only server code
-│       └── _lib/
-│           ├── prompts.ts         prompt templates per task
-│           ├── schemas.ts         JSON response schemas
-│           ├── quota.ts           Workers KV counters
-│           └── validate.ts        grounding and schema checks
+├── api/                           Vercel Node Functions, the only server code
+│   ├── generate.ts                the AI proxy
+│   └── _lib/
+│       ├── gemini.ts              prompt assembly, response schemas, grounding checks
+│       ├── quota.ts               Upstash Redis counters, kill switch
+│       └── security.ts            origin check, salted IP hashing
 ├── public/
 │   ├── manifest.webmanifest
 │   ├── icons/

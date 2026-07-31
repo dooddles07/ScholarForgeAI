@@ -13,7 +13,7 @@ A milestone is complete when every exit criterion is demonstrably met. Not "most
 
 | Exit criterion |
 |---|
-| An empty page is live at a Cloudflare Pages URL |
+| An empty page is live at a Vercel URL |
 | CI runs typecheck, lint, test, build, bundle size, and secret scan, and is green |
 | Layer-boundary lint rules are active and enforced |
 | Design tokens exist and are wired into Tailwind |
@@ -216,7 +216,7 @@ No new features. Verification only.
 | The kill switch tested and cleared |
 | **Someone other than the author has followed the self-hosting guide successfully** |
 | `SECURITY.md` and `CHANGELOG.md` written |
-| Cloudflare dashboard shows $0 |
+| Vercel, Upstash, and Firebase dashboards show $0 |
 | Tagged v1.0 |
 
 ## Sequencing constraints

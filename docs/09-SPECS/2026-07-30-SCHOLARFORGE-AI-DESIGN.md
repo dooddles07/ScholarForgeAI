@@ -36,9 +36,9 @@ These are definitional, not preferences.
 | Decision | Choice | Recorded in |
 |---|---|---|
 | AI provider | Google Gemini 2.5 Flash, free tier, one shared key | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
-| Key protection | Held server-side in a Cloudflare Pages Function, never in the browser | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
+| Key protection | Held server-side in a Vercel Node Function, never in the browser | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
 | Storage | Local-first, IndexedDB. No accounts in v1. | [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) |
-| Hosting | Cloudflare Pages | [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md) |
+| Hosting | Vercel | [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) (originally Cloudflare Pages, [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md)) |
 | Framework | Vite + React SPA | [ADR-0004](../08-DECISIONS/ADR-0004-VITE-SPA-OVER-NEXTJS.md) |
 | Parsing | Entirely in the browser | [ADR-0005](../08-DECISIONS/ADR-0005-CLIENT-SIDE-PARSING.md) |
 | Retrieval | Client-side BM25, no embeddings | [ADR-0006](../08-DECISIONS/ADR-0006-BM25-RETRIEVAL-NOT-EMBEDDINGS.md) |
@@ -48,7 +48,7 @@ These are definitional, not preferences.
 
 ### The two that mattered most
 
-**One shared key, but behind a proxy.** The zero-setup requirement demanded a shared key. But a key shipped to a browser is a published secret — it gets scraped and drained within days, and the consequence lands on the owner's account. So the key lives in a Cloudflare Pages Function, guarded by per-IP and global quotas, with bring-your-own-key as the escape hatch when the shared pool runs dry.
+**One shared key, but behind a proxy.** The zero-setup requirement demanded a shared key. But a key shipped to a browser is a published secret — it gets scraped and drained within days, and the consequence lands on the owner's account. So the key lives in a Vercel Node Function, guarded by per-IP and global quotas, with bring-your-own-key as the escape hatch when the shared pool runs dry.
 
 That escape hatch is what makes the design survive success. A user with their own free key costs the project nothing, so **the product scales to any number of users at $0.**
 
@@ -69,8 +69,8 @@ Browser (does almost everything)
         │
         │  only extracted text crosses this line — never files
         ▼
-Cloudflare Pages Function  /api/generate
-├── holds GEMINI_API_KEY as an env secret
+Vercel Node Function  /api/generate
+├── holds GEMINI_API_KEY as an environment variable
 ├── origin check, kill switch, per-IP and global quotas
 ├── assembles prompts + strict JSON response schemas
 └── validates grounding; drops uncited items before returning

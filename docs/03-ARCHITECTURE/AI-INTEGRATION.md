@@ -14,7 +14,7 @@ Browser (src/ai/client.ts)
   │  Header: X-User-Key  (only if the user supplied their own)
   │  No project key. Nothing in the bundle to steal.
   ▼
-Cloudflare Pages Function (functions/api/generate.ts)
+Vercel Node Function (api/generate.ts)
   │  1. Origin check
   │  2. Kill switch
   │  3. Quota: per-IP daily, then global daily
@@ -26,7 +26,7 @@ Cloudflare Pages Function (functions/api/generate.ts)
 Google Gemini 2.5 Flash (free tier)
 ```
 
-The key lives only in Cloudflare environment secrets. It is never in a bundle, never in a repository, never in a log, and never in a response.
+The key lives only in Vercel environment variables. It is never in a bundle, never in a repository, never in a log, and never in a response.
 
 ## Why the proxy exists at all
 
@@ -102,7 +102,7 @@ Every request is cancellable via `AbortController`. When a user cancels, any par
 
 ## Quota handling
 
-Three counters in Workers KV:
+Three counters in Upstash Redis:
 
 | Counter | Purpose |
 |---|---|
@@ -110,7 +110,7 @@ Three counters in Workers KV:
 | Global daily | Hard stop below the provider's real limit, so we fail with our own message |
 | Kill switch | A flag that disables shared-key generation without a redeploy |
 
-The global ceiling is set below the provider's actual free-tier limit. Two reasons: Workers KV is eventually consistent so counters can drift slightly, and hitting our own limit produces a clear message whereas hitting the provider's produces an opaque one.
+The global ceiling is set below the provider's actual free-tier limit, so hitting our own limit produces a clear message whereas hitting the provider's produces an opaque one.
 
 **Public sources disagree on Gemini's exact free-tier requests-per-day figure**, citing 250 to 1,500 depending on model and date. So the ceiling is a configuration value, set from Google's official rate-limit page before launch and reviewed periodically. It is never hardcoded in documentation or source. See [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md).
 
@@ -175,7 +175,7 @@ Full statement in [SECURITY-AND-PRIVACY.md](../04-OPERATIONS/SECURITY-AND-PRIVAC
 
 ## Runtime constraint
 
-Pages Functions run on the Workers runtime, not Node. The proxy uses Web-standard APIs only: `fetch`, `Request`, `Response`, `crypto.subtle`. No Node built-ins, no npm package that assumes them. This is a real constraint on server-side code and is repeated in [CODING-STANDARDS.md](../05-ENGINEERING/CODING-STANDARDS.md).
+`api/` runs on Vercel's Node.js runtime — the same environment as local development, no restricted API surface. Detail in [CODING-STANDARDS.md](../05-ENGINEERING/CODING-STANDARDS.md).
 
 ## Fallback provider
 

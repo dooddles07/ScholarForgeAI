@@ -17,7 +17,7 @@ No dates. This is a personal project built around other commitments, and invente
 | The AI proxy with quota limits | Bring-your-own-key |
 | Local storage of documents and quizzes | Export |
 | Responsive layout | PWA install, offline |
-| Deployed to Cloudflare | — |
+| Deployed to Vercel | — |
 
 **Done when:** a genuine 100-page university PDF produces ten sound, correctly-cited questions, taken on a real phone.
 

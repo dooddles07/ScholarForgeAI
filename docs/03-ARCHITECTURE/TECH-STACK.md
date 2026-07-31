@@ -27,7 +27,7 @@ When in doubt, write the fifty lines.
 
 **Why React** — largest contributor pool, and the parsing and component ecosystems we need are React-first. See [ADR-0004](../08-DECISIONS/ADR-0004-VITE-SPA-OVER-NEXTJS.md).
 
-**Why Vite over Next.js** — nothing to server-render, simpler Cloudflare deployment, smaller bundle, lower contribution barrier. Same ADR.
+**Why Vite over Next.js** — nothing to server-render, simpler static-plus-one-function deployment, smaller bundle, lower contribution barrier. Same ADR.
 
 **Why TypeScript** — the data model has a lot of shapes (documents, chunks, questions, cards, schedules) and passing them between four layers without types would be needlessly painful. It also makes model responses safer to handle.
 
@@ -118,16 +118,17 @@ The trend chart carries `role="img"` with a summary label, and the same figures 
 
 | Service | Purpose | Free tier | Cost |
 |---|---|---|---|
-| Cloudflare Pages | Static hosting | Unlimited bandwidth, unlimited sites, 500 builds/month, commercial use permitted | $0 |
-| Cloudflare Pages Functions | AI proxy | Approx. 100,000 requests/day | $0 |
-| Cloudflare Workers KV | Quota counters | Free tier read/write allowance | $0 |
+| Vercel Hobby | Static hosting | Soft fair-use bandwidth cap, commercial use prohibited | $0 |
+| Vercel Node Functions | AI proxy | 60s max duration, generous monthly invocation allowance | $0 |
+| Upstash Redis | Quota counters | 256 MB / 500K commands per month | $0 |
+| Firebase Auth + Firestore | Sign-in, optional cloud sync | Spark plan: 50K reads / 20K writes per day | $0 |
 | Google Gemini API | Generation | Free tier, no card required | $0 |
 | GitHub | Repository, issues | Free for public repositories | $0 |
 | GitHub Actions | CI | 2,000 minutes/month on public repos | $0 |
 
 Limits, and what degrades when each is reached, in [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md).
 
-**Why Cloudflare rather than Vercel** — Vercel's Hobby tier prohibits commercial use and pauses the site at the bandwidth cap. See [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md).
+**Why Vercel, not Cloudflare** — originally built on Cloudflare Pages specifically because Vercel Hobby's commercial-use prohibition and pause-at-cap behaviour were unacceptable risks ([ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md)). [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) later moved to Vercel anyway, for familiarity and workflow reasons, accepting both risks explicitly since this is a solo portfolio project rather than one inviting third-party forks to self-host at scale.
 
 **Why Gemini** — free tier without a credit card, a context window large enough to send whole documents (which removes the need for embedding infrastructure entirely), and native structured JSON output, which makes parsing generated quizzes reliable rather than best-effort. See [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md).
 
@@ -153,8 +154,8 @@ The print-to-PDF choice is worth calling out: generating PDFs client-side would 
 
 | Not using | Why |
 |---|---|
-| Next.js | Nothing to server-render; complicates Cloudflare deploy. [ADR-0004](../08-DECISIONS/ADR-0004-VITE-SPA-OVER-NEXTJS.md) |
-| Supabase / Firebase | No accounts in v1; free tiers pause or cap. [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) |
+| Next.js | Nothing to server-render; complicates deployment for no benefit. [ADR-0004](../08-DECISIONS/ADR-0004-VITE-SPA-OVER-NEXTJS.md) |
+| Supabase | Free tier pauses after 7 idle days. [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) |
 | A vector database | No embeddings at all. [ADR-0006](../08-DECISIONS/ADR-0006-BM25-RETRIEVAL-NOT-EMBEDDINGS.md) |
 | LangChain / LlamaIndex | Heavy abstraction over what is, for us, one fetch call with a JSON schema |
 | Redux / Zustand / Jotai | React state plus Dexie's live queries cover it. Revisit only if it actually hurts. |

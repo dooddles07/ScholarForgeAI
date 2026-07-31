@@ -134,7 +134,7 @@ Not automatable, so this is the gate.
 
 ### Cost and limits
 
-- [ ] Cloudflare dashboard shows $0
+- [ ] Vercel, Upstash, and Firebase dashboards show $0
 - [ ] `DAILY_GLOBAL_LIMIT` matches Google's currently published limit
 - [ ] `npx license-checker --summary` shows only permissive licences
 - [ ] Every service in use appears in [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md) with its limit and degradation

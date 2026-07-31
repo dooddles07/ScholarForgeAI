@@ -47,7 +47,7 @@ All `/app/*` routes are gated behind Firebase Google sign-in via `AuthGate` (`sr
 
 ### Hosting reality vs. docs
 
-The project is deployed on **Vercel** (`api/`, `@vercel/node`, `vercel.json`, Upstash Redis for quota counters), per [ADR-0009](docs/08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md). `docs/03-ARCHITECTURE/ARCHITECTURE.md` and `PROJECT-STRUCTURE.md` still describe the earlier Cloudflare Pages design (`functions/api/`, Workers KV) — that ADR superseded ADR-0003 but the architecture prose wasn't fully rewritten. Trust `api/`, `vercel.json`, and the ADRs over those two docs for anything hosting- or server-related.
+The project is deployed on **Vercel** (`api/`, `@vercel/node`, `vercel.json`, Upstash Redis for quota counters), per [ADR-0009](docs/08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md). A 2026-07-31 sweep brought every doc's hosting/infra prose (`ARCHITECTURE.md`, `PROJECT-STRUCTURE.md`, `TECH-STACK.md`, `AI-INTEGRATION.md`, `MONITORING-AND-LIMITS.md`, `CODING-STANDARDS.md`, `CONTRIBUTING.md`, and others) in line with the real Vercel/Upstash/Firebase stack; ADRs and `ACTIVITY-LOG.md`/`DECISION-LOG.md` were deliberately left untouched as point-in-time historical records. One known remaining gap: `AI-INTEGRATION.md`'s wire-protocol description (`task`, an `X-User-Key` header, a `quiz`/`flashcards`/`explain`/`exam`/`chat`/`expandQuery` task list) doesn't match `api/generate.ts`'s real shape (`kind`, an `apiKey` body field, `questions`/`cards`/`chat` only) — a pre-existing spec-vs-implementation drift, not a hosting issue, still open.
 
 ### Data flow — quiz generation
 

@@ -44,16 +44,16 @@ That inversion is what makes the whole thing free. No storage bill, no compute b
                     files never do
                                                 │
 ┌───────────────────────────────────────────────▼─────────────────┐
-│  CLOUDFLARE PAGES FUNCTION   /api/generate                      │
+│  VERCEL NODE FUNCTION   /api/generate                           │
 │                                                                 │
 │  1. origin check                                                │
 │  2. per-IP daily quota      ─┐                                  │
-│  3. global daily ceiling     ├── Workers KV counters            │
+│  3. global daily ceiling     ├── Upstash Redis counters         │
 │  4. kill-switch check       ─┘                                  │
 │  5. assemble prompt + JSON response schema                      │
 │  6. call provider, validate response, strip anything ungrounded │
 │                                                                 │
-│  Holds GEMINI_API_KEY as an env secret. Never returns it.       │
+│  Holds GEMINI_API_KEY as an env var. Never returns it.          │
 │  Logs counters only. Never logs prompts or document text.       │
 └───────────────────────────────────────────────┬─────────────────┘
                                                 │
