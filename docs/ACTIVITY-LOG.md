@@ -7,6 +7,44 @@ Newest entries at the top.
 
 ---
 
+## 2026-07-31 — Settings tab audit: live preference sync, real env wiring, six correctness bugs, dead controls built
+
+**Done**
+An audit of the Settings tab, asked for on the grounds that it should be "connected on live and working, every data is live." Three classes of problem came out of it, all fixed.
+
+- **Preferences never left the device.** `persistence/backup.ts` excluded the `settings` table from export and sync, justified by a comment about "the user's own API key" — a field [ADR-0014](08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md) had already deleted. Built live sync through a new `userSettings/{uid}` Firestore document watched with `onSnapshot`, deliberately separate from the `backups/{uid}` blob. Design and its costs recorded in [ADR-0015](08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md). New files: `domain/settings/synced.ts` (pure: field list, clamp, type guard, `mergeSettings`), `persistence/settings-sync.ts`, `hooks/use-settings-sync.ts`. Settings also joined the backup payload (`BACKUP_VERSION` 2, v1 files still import).
+- **Dev could never reach the live pipeline.** `IS_MOCK_MODE` was `import.meta.env.DEV`, so `npm run dev` always served fixtures while Firebase in the same session talked to production. Now `VITE_MOCK_AI === 'true'`, documented in `.env.example` as the contributor-without-credentials switch. Firebase config is validated at init and names the missing variable instead of failing opaquely at first sign-in.
+- **Controls existed in copy and schema but not in the UI.** Built reduce motion (CSS on `data-motion`, deferring to `prefers-reduced-motion` when set to `system`), focus timer (elapsed time in the review header), a storage-used row via `navigator.storage.estimate()` with a `persist()` request, and made the local-data warning dismissible via the never-read `hasSeenLocalDataWarning`. Deleted `hasSeenInstallPrompt`, which had no feature behind it.
+
+Six correctness bugs, all found during the audit: clearing the cards-per-day field persisted `0` and asked the review session for no cards (now clamped in `updateSettings`, so every writer is covered, and committed on blur); import status was sticky for the life of the page; "Match my device" flashed dark on light-mode devices because `use-settings.ts` *removed* `sf-theme` while `theme-init.js` read a missing key as dark; "Delete everything" left `sf-theme` behind; `syncNow` had no offline guard of its own; `DEFAULT_SETTINGS.theme` was `dark` while the options implied system-first.
+
+Also fixed a defect introduced by this work itself: an existing settings row has no `updatedAt`, so the first push would have sent `undefined` and been silently rejected by the new rules. `getSettings` now backfills it.
+
+Two things surfaced that were not on the original list. `pushBackupToCloud` did a bare `setDoc` of the full corpus against Firestore's 1 MB per-document limit, turning a large library into a generic "sync failed" — it now measures first and fails with copy that points at the export path. And `firebase.json` had no `firestore` target at all, meaning `firestore.rules` had never been deployed by the CLI; added the target and deployed.
+
+**Decisions**
+
+| Decision | Where |
+|---|---|
+| Preferences sync live in their own document, not inside the backup blob | [ADR-0015](08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md) |
+| Mock mode is an explicit flag, not a property of the dev server | `.env.example`, `src/ai/client.ts` |
+
+**Verified**
+- `npm run typecheck && npm run lint && npm test && npm run build` all pass; 96 tests, 10 new (`domain/settings/synced.test.ts`, plus the size-ceiling case in `persistence/sync.test.ts`).
+- Browser check with a cleared profile on a light-mode device: `sf-theme` stores `system`, the page paints light, `data-motion` applies, no console errors.
+- `firebase deploy --only firestore:rules` succeeded against `scholarforge-ai-2fbd9`.
+
+**Status**
+Code complete and deployed rules. The signed-in path is unverified end to end.
+
+**Next action**
+Two-device check with a real Google account: change the theme on one device, confirm it reaches the other without a reload. If it stalls silently, the cause is the Firestore Listen channel under the CSP and the fix is `experimentalAutoDetectLongPolling: true` in `src/lib/firestore.ts`.
+
+**Blockers**
+`VITE_MOCK_AI` and `ALLOWED_ORIGIN` still need setting in the Vercel dashboard. `VITE_` variables are baked in at build time, so the deployed bundle ignores the local `.env` — and `api/_lib/security.ts` skips the origin check entirely when `ALLOWED_ORIGIN` is unset.
+
+---
+
 ## 2026-07-31 — Final whole-branch review fix wave: CSP, service worker, hook error handling, offline UI, docs
 
 **Done**

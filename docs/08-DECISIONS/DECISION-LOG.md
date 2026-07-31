@@ -23,6 +23,7 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 | [ADR-0012](ADR-0012-POPUP-SIGN-IN-OVER-REDIRECT.md) | Google sign-in via popup rather than redirect | Accepted | 2026-07-31 |
 | [ADR-0013](ADR-0013-GROQ-OVER-GEMINI.md) | Generate with Groq rather than Google Gemini | Accepted | 2026-07-31 |
 | [ADR-0014](ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md) | Remove bring-your-own-key; the shared key is the only key | Accepted | 2026-07-31 |
+| [ADR-0015](ADR-0015-LIVE-SETTINGS-SYNC.md) | Preferences sync live in their own document, separate from the backup blob | Accepted | 2026-07-31 |
 
 ## Format
 
