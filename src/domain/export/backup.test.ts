@@ -34,4 +34,34 @@ describe('isBackupPayload', () => {
   it('rejects a non-numeric version', () => {
     expect(isBackupPayload({ version: '1', documents: [], cards: [] })).toBe(false);
   });
+
+  it('rejects a payload missing a previously-unchecked array field', () => {
+    const complete = {
+      version: 1,
+      exportedAt: 0,
+      documents: [],
+      studySets: [],
+      decks: [],
+      cards: [],
+      quizzes: [],
+      attempts: [],
+      exams: [],
+      conversations: [],
+      reviewLog: [],
+    };
+    const fields = [
+      'studySets',
+      'decks',
+      'quizzes',
+      'attempts',
+      'exams',
+      'conversations',
+      'reviewLog',
+    ] as const satisfies readonly (keyof typeof complete)[];
+    for (const field of fields) {
+      const rest: Record<string, unknown> = { ...complete };
+      delete rest[field];
+      expect(isBackupPayload(rest)).toBe(false);
+    }
+  });
 });

@@ -27,12 +27,21 @@ export interface BackupPayload {
   reviewLog: ReviewLogEntry[];
 }
 
+const ARRAY_FIELDS = [
+  'documents',
+  'studySets',
+  'decks',
+  'cards',
+  'quizzes',
+  'attempts',
+  'exams',
+  'conversations',
+  'reviewLog',
+] as const;
+
 export function isBackupPayload(value: unknown): value is BackupPayload {
   if (typeof value !== 'object' || value === null) return false;
   const record = value as Record<string, unknown>;
-  return (
-    typeof record.version === 'number' &&
-    Array.isArray(record.documents) &&
-    Array.isArray(record.cards)
-  );
+  if (typeof record.version !== 'number') return false;
+  return ARRAY_FIELDS.every((field) => Array.isArray(record[field]));
 }

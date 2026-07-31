@@ -7,65 +7,70 @@ export interface AuthUser {
   email: string | null;
 }
 
-/*
- * Every Firebase import below is dynamic: this hook backs the app-wide sign-in gate
- * (src/ui/components/AuthGate.tsx), so it must stay out of the marketing page's bundle and only
- * load once a visitor actually enters /app/*.
- */
+interface AuthState {
+  status: AuthStatus;
+  user: AuthUser | null;
+}
+
+/* Module-level singleton: every useAuthUser() call site (AuthGate, useCloudSync, ...) shares one
+   Firebase subscription and one getRedirectResult() call instead of each mounting its own. */
+let sharedState: AuthState = { status: 'loading', user: null };
+const listeners = new Set<(state: AuthState) => void>();
+let initStarted = false;
+
+function setSharedState(next: AuthState): void {
+  sharedState = next;
+  for (const listener of listeners) listener(next);
+}
+
+function ensureInitialized(): void {
+  if (initStarted) return;
+  initStarted = true;
+
+  void (async () => {
+    try {
+      const [{ firebaseAuth }, { onAuthStateChanged, getRedirectResult }] = await Promise.all([
+        import('@/lib/firebase'),
+        import('firebase/auth'),
+      ]);
+      const auth = firebaseAuth();
+
+      /*
+       * Required to complete a signInWithRedirect flow: without this call, a failed redirect
+       * (e.g. third-party storage blocked between this origin and the authDomain) fails silently
+       * and onAuthStateChanged never fires, leaving the UI stuck signed-out with no error.
+       */
+      try {
+        await getRedirectResult(auth);
+      } catch (redirectError) {
+        console.error('[auth] redirect sign-in failed', redirectError);
+      }
+
+      onAuthStateChanged(auth, (firebaseUser) => {
+        setSharedState(
+          firebaseUser
+            ? { status: 'signedIn', user: { uid: firebaseUser.uid, email: firebaseUser.email } }
+            : { status: 'signedOut', user: null },
+        );
+      });
+    } catch {
+      setSharedState({ status: 'signedOut', user: null });
+    }
+  })();
+}
+
 export function useAuthUser(): { status: AuthStatus; user: AuthUser | null } {
-  const [status, setStatus] = useState<AuthStatus>('loading');
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [state, setState] = useState(sharedState);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const [{ firebaseAuth }, { onAuthStateChanged, getRedirectResult }] = await Promise.all([
-          import('@/lib/firebase'),
-          import('firebase/auth'),
-        ]);
-        if (cancelled) return;
-
-        const auth = firebaseAuth();
-
-        /*
-         * Required to complete a signInWithRedirect flow: without this call, a failed redirect
-         * (e.g. third-party storage blocked between this origin and the authDomain) fails silently
-         * and onAuthStateChanged never fires, leaving the UI stuck signed-out with no error.
-         */
-        try {
-          await getRedirectResult(auth);
-        } catch (redirectError) {
-          if (cancelled) return;
-          console.error('[auth] redirect sign-in failed', redirectError);
-        }
-
-        if (cancelled) return;
-
-        unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-          if (!firebaseUser) {
-            setUser(null);
-            setStatus('signedOut');
-            return;
-          }
-          setUser({ uid: firebaseUser.uid, email: firebaseUser.email });
-          setStatus('signedIn');
-        });
-      } catch {
-        if (cancelled) return;
-        setStatus('signedOut');
-      }
-    })();
-
+    listeners.add(setState);
+    ensureInitialized();
     return () => {
-      cancelled = true;
-      unsubscribe?.();
+      listeners.delete(setState);
     };
   }, []);
 
-  return { status, user };
+  return state;
 }
 
 export async function signInWithGoogle(): Promise<void> {

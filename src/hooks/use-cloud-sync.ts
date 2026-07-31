@@ -79,6 +79,7 @@ export function useCloudSync() {
     try {
       await importBackup(foundBackupRef.current);
       foundBackupRef.current = null;
+      await updateSettings({ lastSyncedAt: Date.now() });
       setStatus('signedIn');
     } catch {
       setStatus('error');

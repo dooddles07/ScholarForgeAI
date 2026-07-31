@@ -77,9 +77,14 @@ export function CloudSyncSection() {
         <p role="alert" className="text-sm text-incorrect">
           {copy.syncError}
         </p>
-        <Button variant="secondary" className="mt-3" onClick={() => void syncNow()}>
-          {copy.syncNow}
-        </Button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => void syncNow()}>
+            {copy.syncNow}
+          </Button>
+          <Button variant="ghost" onClick={() => void signOut()}>
+            {copy.syncSignOut}
+          </Button>
+        </div>
       </div>
     );
   }
