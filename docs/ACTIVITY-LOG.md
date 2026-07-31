@@ -124,8 +124,18 @@ Newest entries at the top.
 - Live curl to `/api/generate` with a valid origin now reaches Gemini (was 404, now the request pipeline completes). Direct Gemini API test with the real key and a `responseSchema` matching this project's structured-output usage: `200`, valid JSON, matches the shape the app expects.
 - Typecheck, lint, full test suite (37 tests), and build all green.
 
-**Not yet done**
-- Full quiz/cards/chat generation not yet exercised end-to-end through the actual UI against the redeployed model — next step once this deploys.
+**Verified end-to-end through the real UI**: quiz generation produced a genuine grounded multiple-choice question from the uploaded PDF (not the mock fill-in-blank shape).
+
+## 2026-07-30 — Chat 504s: Edge Function's 25s ceiling vs Gemini's thinking latency
+
+**Done**
+- Chat requests intermittently returned `504 Gateway Timeout` from `/api/generate` in production. Measured real latency by curling Gemini directly with the exact prompt/schema shape `api/_lib/gemini.ts` sends for a chat answer: 4-8s typical, with `thoughtsTokenCount` (the newer Gemini models' extended-reasoning cost) varying widely per call — 121 tokens for a one-word reply in one test, 1169 for a real grounded answer in another, with no config on our side controlling it (`thinkingConfig.thinkingBudget: 0` was rejected outright by this model with `400 INVALID_ARGUMENT`; `thinkingLevel: "low"` was accepted but produced more thinking tokens than the unconfigured default in testing, not less).
+- Root cause: `api/generate.ts` ran on Vercel's Edge runtime, which has a hard 25-second execution ceiling that cannot be raised on any plan, regardless of `maxDuration`. Given the variance just measured, an occasional slow "thinking" response was always going to clip against that wall.
+- Switched off Edge entirely — removed `export const config = { runtime: 'edge' }`, added `export const maxDuration = 60`. No handler code changed: Vercel's Node.js runtime accepts the same `Request → Response` signature this file already used. Node functions allow up to 60s on Hobby (300s on Pro), comfortably covering the observed worst case with room to spare.
+
+**Verified**
+- Typecheck, lint, full test suite (37 tests), and build all green.
+- Confirmed `crypto.subtle` (used in `api/_lib/security.ts`'s `hashIp`) is available as a Node global under Vercel's Node 20 runtime, so no other code needed to change for the runtime switch.
 
 ## 2026-07-30 — Post-deploy fixes: Vercel function typecheck, CSP, colour contrast
 

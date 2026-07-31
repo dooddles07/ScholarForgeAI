@@ -10,7 +10,12 @@ import {
   type RawQuestionItem,
 } from './_lib/gemini.js';
 
-export const config = { runtime: 'edge' };
+/* Node runtime, not Edge: Edge Functions have a hard 25s execution ceiling that cannot be
+   raised on any plan. Gemini's "thinking" latency for a real grounded answer varies a lot
+   (observed 4-8s typical, occasionally much higher) and got clipped at 25s in testing, returning
+   a 504 the client had no way to distinguish from a real outage. Node functions allow up to 60s
+   on Hobby via maxDuration below, with the same Request-in/Response-out handler shape. */
+export const maxDuration = 60;
 
 /* Roughly 100k tokens of safety margin under Gemini's 1M-token context window, per
    ADR-0006/RATE-LIMITING-AND-ABUSE.md's request-size limit. */
