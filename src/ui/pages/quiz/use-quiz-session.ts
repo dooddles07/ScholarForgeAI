@@ -5,6 +5,7 @@ import { scoreQuiz, type QuizScore } from '@/domain/quiz/scoring';
 import { shuffleOptions } from '@/domain/quiz/shuffle';
 import { useGenerateQuestions } from '@/hooks/use-generation';
 import { useRecordStudyDay } from '@/hooks/use-streak';
+import { useSaveAttempt } from '@/hooks/use-attempts';
 import { generationErrorMessage } from '@/lib/generation-error';
 
 export type Phase = 'config' | 'generating' | 'question' | 'results';
@@ -12,6 +13,7 @@ export type Phase = 'config' | 'generating' | 'question' | 'results';
 export function useQuizSession(doc: StoredDocument | undefined) {
   const generateQuestions = useGenerateQuestions();
   const recordStudyDay = useRecordStudyDay();
+  const saveAttempt = useSaveAttempt();
   const [phase, setPhase] = useState<Phase>('config');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [index, setIndex] = useState(0);
@@ -65,14 +67,24 @@ export function useQuizSession(doc: StoredDocument | undefined) {
 
   const next = useCallback(() => {
     questionStartedAt.current = Date.now();
-    setIndex((i) => {
-      if (i + 1 >= questions.length) {
-        setPhase('results');
-        return i;
+    if (index + 1 >= questions.length) {
+      setPhase('results');
+      if (doc) {
+        void saveAttempt({
+          id: crypto.randomUUID(),
+          kind: 'quiz',
+          sourceId: doc.id,
+          startedAt: startedAt.current,
+          completedAt: Date.now(),
+          responses,
+          score: scoreQuiz(questions, responses).percent,
+          timeSpentMs: Date.now() - startedAt.current,
+        });
       }
-      return i + 1;
-    });
-  }, [questions.length]);
+      return;
+    }
+    setIndex(index + 1);
+  }, [doc, index, questions, responses, saveAttempt]);
 
   /* Flagging excludes the question from scoring rather than deleting it. */
   const flag = useCallback(() => {
