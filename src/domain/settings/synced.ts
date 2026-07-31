@@ -62,9 +62,18 @@ export function isSyncedSettings(value: unknown): value is SyncedSettings {
 export function mergeSettings(local: Settings, remote: SyncedSettings): Settings {
   /* A row written before preferences could sync has no timestamp, so anything remote is newer. */
   if (remote.updatedAt <= (local.updatedAt ?? 0)) return local;
+  /* Copied key by key rather than spread: a backup file is user-supplied and may carry fields we
+     never sync, which spreading would let overwrite this device's own history. */
   return {
     ...local,
-    ...remote,
+    theme: remote.theme,
+    readingMode: remote.readingMode,
+    reduceMotion: remote.reduceMotion,
     dailyCardLimit: clampDailyCardLimit(remote.dailyCardLimit),
+    focusTimerEnabled: remote.focusTimerEnabled,
+    streakCount: remote.streakCount,
+    streakLastDay: remote.streakLastDay,
+    streakGraceUsed: remote.streakGraceUsed,
+    updatedAt: remote.updatedAt,
   };
 }

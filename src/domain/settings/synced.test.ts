@@ -74,6 +74,15 @@ describe('mergeSettings', () => {
     expect(mergeSettings(legacy, remote).theme).toBe('dark');
   });
 
+  /* A backup file is user-supplied. Extra fields in it must not reach this device's own history. */
+  it('ignores fields outside the synced set, even when the remote copy carries them', () => {
+    const contaminated = { ...remote, lastSyncedAt: 1, hasSeenLocalDataWarning: false };
+    const merged = mergeSettings(local, contaminated as SyncedSettings);
+    expect(merged.lastSyncedAt).toBe(222);
+    expect(merged.hasSeenLocalDataWarning).toBe(true);
+    expect(merged.theme).toBe('dark');
+  });
+
   it('clamps a remote limit that skipped the client check', () => {
     expect(mergeSettings(local, { ...remote, dailyCardLimit: 9999 }).dailyCardLimit).toBe(200);
   });
