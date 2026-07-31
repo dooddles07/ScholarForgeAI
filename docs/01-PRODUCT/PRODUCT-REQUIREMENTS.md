@@ -205,8 +205,7 @@ Identifiers are stable. Reference them in commits, issues, and tests.
 
 **Acceptance criteria**
 - When the shared daily quota is spent, the message says so plainly and states when it resets
-- The bring-your-own-key option is offered at that moment, with a link to where a free key comes from
-- A user-supplied key is stored only in the browser and is never transmitted anywhere except to the AI provider
+- No alternative is offered: bring-your-own-key was removed (ADR-0014), so the reset time is all the app can honestly give
 - Nothing already stored becomes unavailable because the quota ran out
 - The word "upgrade" appears nowhere, and no payment is ever suggested
 

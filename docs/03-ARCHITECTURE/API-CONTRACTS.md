@@ -22,7 +22,6 @@ interface GenerateRequest {
   question?: string;           // chat only
   difficulty?: 'easy' | 'medium' | 'hard';   // questions only, optional
   types?: ('mcq' | 'trueFalse' | 'shortAnswer' | 'fillBlank')[];  // questions only, optional
-  apiKey?: string;             // the user's own key, when they've supplied one in Settings
 }
 ```
 
@@ -53,7 +52,7 @@ built yet (it appears in marketing copy, not in any hook or call site). Query ex
 interface ItemsResponse {
   items: {
     // question fields (type, prompt, options, correctIndex, correctAnswer, explanation, topic)
-    // or card fields (front, back, topic) — see api/_lib/gemini.ts
+    // or card fields (front, back, topic) — see api/_lib/groq.ts
     citation: { chunkId: string; pageStart: number; pageEnd: number; quote: string };
   }[];
 }
@@ -83,12 +82,11 @@ interface ErrorResponse {
 | `METHOD_NOT_ALLOWED` | 405 | Not a POST |
 | `FORBIDDEN` | 403 | Request not from the allowed origin |
 | `BAD_REQUEST` | 400 | Malformed body — missing `kind`, empty `chunks`, etc. |
-| `TEXT_TOO_LARGE` | 413 | Combined chunk text exceeds the configured safety margin under Gemini's context window |
-| `INVALID_API_KEY` | 400 | A user-supplied key failed basic format validation, before ever reaching the provider |
+| `TEXT_TOO_LARGE` | 413 | Combined chunk text exceeds `MAX_CHARS` (24,000), set by Groq's 8,000 tokens/minute cap |
 | `SERVICE_UNAVAILABLE` | 503 | Quota service (Upstash) unreachable, or no key available at all — fails closed |
 | `QUOTA_EXCEEDED` | 429 | Per-IP or global daily quota spent (one code covers both) |
 | `SERVICE_DISABLED` | 503 | Kill switch active |
-| `PROVIDER_ERROR` | 502, or the provider's own status if under 500 | Gemini call failed |
+| `PROVIDER_ERROR` | 502, or the provider's own status if under 500 | Groq call failed |
 
 Messages are written for users, not developers, on the client side: `src/lib/generation-error.ts`
 maps `QUOTA_EXCEEDED`/`SERVICE_DISABLED`/`SERVICE_UNAVAILABLE` to the honest quota-exhausted copy in
@@ -115,7 +113,7 @@ The real sequence in `api/generate.ts`:
    Else:
      hash the IP, check per-IP and global daily counters (api/_lib/quota.ts)
        → 429 QUOTA_EXCEEDED, 503 SERVICE_DISABLED, or 503 SERVICE_UNAVAILABLE
-6. Call Gemini with the assembled prompt + JSON response schema
+6. Call Groq with the assembled prompt + JSON response schema
 7. For each returned item, drop it unless its chunkId matches a chunk actually sent
 8. Return the surviving items (or chat content + citations)
 ```
@@ -147,7 +145,6 @@ a targeted attack.
 |---|---|
 | Return the project API key, in any form | It is the one secret in the system |
 | Log prompts or document text | Privacy commitment |
-| Log or store a user-supplied key | It is the user's credential, not ours |
 | Store anything about a user | There is no database, by design |
 | Retain IP addresses beyond the rate-limit window | Minimisation |
 | Set a cookie | Nothing to track |

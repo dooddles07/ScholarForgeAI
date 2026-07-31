@@ -47,10 +47,7 @@ export const quota = {
   heading: "Today's free AI usage has run out.",
   body: (resetTime: string, duration: string) =>
     `It resets at ${resetTime}, about ${duration} from now. Everything you have already made still works, including offline.`,
-  alternative:
-    'If you would rather not wait, you can add your own free key. It takes about two minutes and it is also free.',
-  addKey: 'Add my own key',
-  wait: "I'll wait",
+  wait: 'It resets tomorrow. Everything you have already made still works, including offline.',
 } as const;
 
 export const generic = {

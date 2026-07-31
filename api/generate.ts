@@ -1,15 +1,15 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isAllowedOrigin, clientIp, hashIp, isPlausibleApiKey } from './_lib/security.js';
+import { isAllowedOrigin, clientIp, hashIp } from './_lib/security.js';
 import { checkAndConsumeQuota } from './_lib/quota.js';
 import {
-  callGemini,
-  GeminiError,
+  callGroq,
+  ProviderError,
   type GenerateRequestBody,
   type GroundedChunk,
   type RawCardItem,
   type RawChatResult,
   type RawQuestionItem,
-} from './_lib/gemini.js';
+} from './_lib/groq.js';
 
 /* Vercel's Node.js runtime, using its own req/res handler shape rather than the Web-standard
    Request/Response signature: the latter crashed on invocation in production
@@ -17,13 +17,10 @@ import {
    This is the long-documented, guaranteed-supported way to write a Node Function on Vercel. */
 export const config = { maxDuration: 60 };
 
-/* Roughly 100k tokens of safety margin under Gemini's 1M-token context window, per
-   ADR-0006/RATE-LIMITING-AND-ABUSE.md's request-size limit. */
-const MAX_CHARS = 400_000;
-
-interface RequestPayload extends GenerateRequestBody {
-  apiKey?: string | null;
-}
+/* Groq's free tier caps at 8,000 tokens per minute, which is the binding constraint here — not the
+   model's 131k context window. Roughly 24k characters of passage text leaves room for the prompt
+   and the completion inside that budget. The client selects which chunks to send. */
+const MAX_CHARS = 24_000;
 
 function totalChars(chunks: GroundedChunk[]): number {
   return chunks.reduce((sum, c) => sum + c.text.length, 0);
@@ -31,7 +28,7 @@ function totalChars(chunks: GroundedChunk[]): number {
 
 /* The model is trusted to write good prose, never to invent a source: every returned item is
    dropped unless its chunkId matches one we actually sent, and the page numbers in the final
-   citation always come from our own chunk data, never the model's own claim. */
+   citation always come from our own chunk data, never a model-claimed page. */
 function groundedCitation(chunkId: string, quote: string, chunks: GroundedChunk[]) {
   const chunk = chunks.find((c) => c.id === chunkId);
   if (!chunk) return null;
@@ -52,7 +49,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const body = req.body as RequestPayload;
+  const body = req.body as GenerateRequestBody;
   if (!body || !body.kind || !Array.isArray(body.chunks) || body.chunks.length === 0) {
     res.status(400).json({ error: 'BAD_REQUEST' });
     return;
@@ -63,32 +60,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     return;
   }
 
-  const usingOwnKey = Boolean(body.apiKey);
-
-  if (usingOwnKey && !isPlausibleApiKey(body.apiKey!)) {
-    res.status(400).json({ error: 'INVALID_API_KEY' });
+  const ipHash = await hashIp(clientIp(header(req.headers['x-forwarded-for'])));
+  const quota = await checkAndConsumeQuota(ipHash);
+  if (!quota.ok) {
+    res.status(quota.reason === 'QUOTA_EXCEEDED' ? 429 : 503).json({ error: quota.reason });
     return;
   }
 
-  let apiKey = body.apiKey ?? undefined;
-
-  if (!usingOwnKey) {
-    const ipHash = await hashIp(clientIp(header(req.headers['x-forwarded-for'])));
-    const quota = await checkAndConsumeQuota(ipHash);
-    if (!quota.ok) {
-      res.status(quota.reason === 'QUOTA_EXCEEDED' ? 429 : 503).json({ error: quota.reason });
-      return;
-    }
-    apiKey = process.env.GEMINI_API_KEY;
-  }
-
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
     res.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
     return;
   }
 
   try {
-    const result = await callGemini(body, apiKey);
+    const result = await callGroq(body, apiKey);
 
     if (body.kind === 'chat') {
       const chat = result as RawChatResult;
@@ -107,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     res.status(200).json({ items });
   } catch (error) {
-    const status = error instanceof GeminiError ? error.status : 502;
+    const status = error instanceof ProviderError ? error.status : 502;
     res.status(status >= 500 ? 502 : status).json({ error: 'PROVIDER_ERROR' });
   }
 }

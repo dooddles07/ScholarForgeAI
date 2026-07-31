@@ -45,8 +45,10 @@ export async function checkAndConsumeQuota(ipHash: string): Promise<QuotaResult>
     const globalCount = await redis.incr(globalKey);
     if (globalCount === 1) await redis.expire(globalKey, TTL_SECONDS);
 
-    const ipLimit = Number(process.env.DAILY_IP_LIMIT ?? '10');
-    const globalLimit = Number(process.env.DAILY_GLOBAL_LIMIT ?? '50');
+    /* Groq's free tier allows 1,000 requests/day for the whole project. These defaults sit under
+       that with margin; the dashboard values override them and are the real setting. */
+    const ipLimit = Number(process.env.DAILY_IP_LIMIT ?? '40');
+    const globalLimit = Number(process.env.DAILY_GLOBAL_LIMIT ?? '800');
 
     if (ipCount > ipLimit || globalCount > globalLimit) {
       return { ok: false, reason: 'QUOTA_EXCEEDED' };

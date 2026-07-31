@@ -122,7 +122,7 @@ The trend chart carries `role="img"` with a summary label, and the same figures 
 | Vercel Node Functions | AI proxy | 60s max duration, generous monthly invocation allowance | $0 |
 | Upstash Redis | Quota counters | 256 MB / 500K commands per month | $0 |
 | Firebase Auth + Firestore | Sign-in, optional cloud sync | Spark plan: 50K reads / 20K writes per day | $0 |
-| Google Gemini API | Generation | Free tier, no card required | $0 |
+| Groq API | Generation | Free tier, no card required. 1,000 requests/day, 8,000 tokens/minute | $0 |
 | GitHub | Repository, issues | Free for public repositories | $0 |
 | GitHub Actions | CI | 2,000 minutes/month on public repos | $0 |
 

@@ -58,7 +58,7 @@ That inversion is what makes the whole thing free. No storage bill, no compute b
 └───────────────────────────────────────────────┬─────────────────┘
                                                 │
                               ┌─────────────────▼─────────────────┐
-                              │  Google Gemini 2.5 Flash (free)   │
+                              │  Groq gpt-oss-120b (free tier)    │
                               └───────────────────────────────────┘
 ```
 
@@ -161,7 +161,7 @@ Function: origin check → quota check → kill switch
   ▼
 Assemble prompt + strict JSON response schema
   ▼
-Call Gemini with structured output
+Call Groq with structured output
   ▼
 Validate: is it schema-valid? does every question cite a page?
   │  Questions without a citation are dropped here, server-side.
@@ -181,7 +181,7 @@ Two things worth noting. Validation happens on the server, so an ungrounded ques
 
 ## What crosses the network, and what does not
 
-**Crosses:** extracted document text relevant to the current request, generation options, an optional user-supplied API key on that user's own requests.
+**Crosses:** extracted document text relevant to the current request, and generation options. Nothing else.
 
 **Never crosses:** the original file, stored decks, quiz results, review schedules, progress history, or any identifier for the user.
 
@@ -206,7 +206,7 @@ Because Pages Functions run on the Workers runtime rather than Node, it must use
 | Failure | Behaviour |
 |---|---|
 | Offline | App loads from cache. Stored content fully usable. AI actions disabled with a stated reason. |
-| Shared quota spent | Plain message, reset time in local time, bring-your-own-key offered. Nothing stored becomes unavailable. |
+| Shared quota spent | Plain message and reset time in local time. No alternative path (ADR-0014). Nothing stored becomes unavailable. |
 | Provider down or erroring | Retry with backoff, then a clear failure. Partial results kept. |
 | Malformed model response | Server-side schema validation rejects it and retries once, then fails cleanly. |
 | Parse failure | Named cause and a suggested next step. Other documents unaffected. |

@@ -17,13 +17,13 @@ Browser (src/ai/client.ts)
 Vercel Node Function (api/generate.ts)
   │  1. Origin check
   │  2. Body + size validation
-  │  3. If own key: validate its format. Else: per-IP daily quota, then global daily, kill switch
+  │  3. Per-IP daily quota, then global daily, kill switch
   │  4. Assemble prompt + JSON response schema
   │  5. Call provider
   │  6. Drop any item whose citation doesn't map back to a chunk actually sent
   │  7. Return the rest
   ▼
-Google Gemini 2.5 Flash (free tier)
+Groq gpt-oss-120b (free tier)
 ```
 
 The key lives only in Vercel environment variables. It is never in a bundle, never in a repository, never in a log, and never in a response.
@@ -58,7 +58,7 @@ Prompts and schemas in [PROMPT-LIBRARY.md](PROMPT-LIBRARY.md). Wire format in [A
 
 ## Structured output
 
-Every kind except `chat` requests a strict JSON schema via Gemini's `responseSchema`. This is the single most valuable property of the provider choice: the model returns parseable JSON conforming to a declared shape, rather than prose we have to extract JSON from.
+Every kind requests a strict JSON schema via Groq's `response_format: json_schema`. This is the single most valuable property of the provider choice: the model returns parseable JSON conforming to a declared shape, rather than prose we have to extract JSON from.
 
 Without it, the failure mode is a model wrapping JSON in a markdown fence, or trailing an apology after the closing brace, and a brittle parser trying to cope. With it, parsing is reliable.
 
@@ -88,7 +88,7 @@ This is deliberately strict. Returning eight good questions instead of ten is fi
 
 ## Retries
 
-**There is no retry policy today, server- or client-side.** `api/generate.ts` calls Gemini once;
+**There is no retry policy today, server- or client-side.** `api/generate.ts` calls Groq once;
 a network failure, a 429, a 5xx, or malformed JSON all surface as a single `PROVIDER_ERROR` (or the
 provider's own status code) with no second attempt. `src/ai/client.ts` doesn't retry either — one
 `fetch`, and a non-OK response becomes a thrown `ProxyError` immediately.
@@ -113,27 +113,20 @@ Three counters in Upstash Redis:
 
 The global ceiling is set below the provider's actual free-tier limit, so hitting our own limit produces a clear message whereas hitting the provider's produces an opaque one.
 
-**Public sources disagree on Gemini's exact free-tier requests-per-day figure**, citing 250 to 1,500 depending on model and date. So the ceiling is a configuration value, set from Google's official rate-limit page before launch and reviewed periodically. It is never hardcoded in documentation or source. See [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md).
+Provider limits change without notice, so the ceiling is a configuration value, set from Groq's console before launch and reviewed periodically. It is never hardcoded in documentation or source. See [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md).
 
-Requests carrying a user-supplied key bypass both quota counters entirely, since they cost us nothing.
+Every request increments both counters. Nothing bypasses them.
 
 ### When the quota is spent
 
-The response says what happened, when it resets in the user's local time, and offers the bring-your-own-key path with a link to where a free key comes from.
+The response says what happened and when it resets in the user's local time. Nothing else is offered — bring-your-own-key was removed ([ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md)).
 
 It never says "upgrade". It never mentions payment. Everything already stored keeps working offline.
 
-## Bring your own key
+## There is no bring-your-own-key
 
-The escape hatch that lets the product survive popularity.
+Removed in [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md). Every request uses the project's shared key and counts against the shared quota, so a spent quota stops generation for everyone until reset.
 
-- User pastes a free key in settings
-- Stored in IndexedDB, in that browser only
-- Sent in the request body on that user's own requests
-- The proxy uses it in place of the project key
-- Never logged, never persisted server-side, never sent anywhere except the provider
-
-The settings screen states all of this plainly, and includes a three-step guide to getting a free key from Google AI Studio. A user with their own key is limited only by their own free tier.
 
 ## Mock mode
 

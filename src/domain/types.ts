@@ -196,8 +196,6 @@ export interface Settings {
   reduceMotion: 'system' | 'always';
   dailyCardLimit: number;
   focusTimerEnabled: boolean;
-  /* This browser only. Never transmitted to us. */
-  userApiKey: string | null;
   hasSeenInstallPrompt: boolean;
   hasSeenLocalDataWarning: boolean;
   lastExportAt: number | null;

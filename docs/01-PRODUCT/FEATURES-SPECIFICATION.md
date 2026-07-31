@@ -224,7 +224,7 @@ Import accepts study packs and the full archive. Import validates the file and r
 | Keyboard shortcuts | Full keyboard operation on desktop, with a `?` shortcut sheet |
 | Reading mode | Wider letter and line spacing for dyslexic readers |
 | Delete everything | One clear control that wipes all local data, with confirmation |
-| Bring your own key | Paste a personal free API key to bypass the shared daily quota |
+| ~~Bring your own key~~ | Built, then removed — everyone uses the shared key. See ADR-0014 |
 
 ---
 
@@ -234,7 +234,7 @@ These apply to every feature above.
 
 **Grounding.** Nothing generated may go beyond the uploaded document. Every quiz question, exam question, flashcard, and explanation carries a source citation. Items without one are discarded before display.
 
-**Quota honesty.** When the shared AI quota is exhausted, the app says so plainly, says when it resets, and offers the bring-your-own-key option. It never fails silently and never asks for money.
+**Quota honesty.** When the shared AI quota is exhausted, the app says so plainly and says when it resets. There is no alternative to offer (ADR-0014). It never fails silently and never asks for money.
 
 **Interruptibility.** Any generation can be cancelled. Any partial result is kept.
 

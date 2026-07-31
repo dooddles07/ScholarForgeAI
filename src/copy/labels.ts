@@ -169,21 +169,6 @@ export const deleteAll = {
   cancel: 'Keep my data',
 } as const;
 
-export const byok = {
-  heading: 'Use your own free key',
-  intro:
-    'Google gives out free API keys. With your own, you are not sharing a daily limit with everyone else.',
-  step1: 'Go to Google AI Studio and sign in',
-  step2: 'Click Get API key, then Create API key',
-  step3: 'Paste it below',
-  fieldLabel: 'Your API key',
-  privacyNote:
-    'Your key is saved in this browser only. It is never sent to our servers and never stored anywhere else.',
-  save: 'Save my key',
-  confirmation: 'Saved. You are no longer sharing the daily limit.',
-  remove: 'Remove my key',
-} as const;
-
 export const install = {
   prompt: 'Add ScholarForge to your home screen so it opens like an app and works offline.',
   install: 'Add it',
@@ -203,7 +188,6 @@ export const settings = {
   studying: 'Studying',
   dailyCardLimit: 'Cards per day',
   focusTimer: 'Focus timer',
-  ai: 'AI',
   yourData: 'Your data',
   exportAll: 'Export a backup',
   importPack: 'Import a backup',
@@ -227,9 +211,5 @@ export const settings = {
   exportAnki: 'For Anki',
   exportQuizlet: 'For Quizlet',
   storageUsed: 'Storage used',
-  about: 'About',
-  version: 'Version',
-  licence: 'Licence',
-  sourceCode: 'Source code',
   reportProblem: 'Report a problem',
 } as const;

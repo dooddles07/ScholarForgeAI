@@ -8,6 +8,7 @@ import type {
   TextChunk,
 } from '@/domain/types';
 import { bm25Rank } from '@/domain/retrieval/bm25';
+import { selectSpread } from '@/domain/retrieval/select-spread';
 import { mockQuestions } from './mock/questions';
 import { mockCards } from './mock/cards';
 import { MOCK_DOC_ID } from './mock/document';
@@ -20,12 +21,15 @@ import { generateCardsFromChunks, generateQuestionsFromChunks } from './mock/gen
  */
 
 export interface GenerateOptions {
-  /* The user's own key, when they have supplied one. Never logged, never persisted by us. */
-  apiKey?: string | null;
   signal?: AbortSignal;
 }
 
 export const IS_MOCK_MODE = import.meta.env.DEV;
+
+/* Mirrors MAX_CHARS in api/generate.ts, which is set by the provider's per-minute token cap.
+   Selecting here rather than server-side keeps the document itself on the device: only the
+   passages actually needed for the request ever cross the network. */
+const MAX_REQUEST_CHARS = 24_000;
 
 /* Enough delay that progress states are real rather than theatre, short enough not to annoy. */
 const THINKING_MS = 900;
@@ -65,7 +69,7 @@ async function callProxy(
   const response = await fetch('/api/generate', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ ...body, apiKey: options.apiKey ?? undefined }),
+    body: JSON.stringify(body),
     ...(options.signal ? { signal: options.signal } : {}),
   });
 
@@ -171,7 +175,7 @@ export async function generateQuestions(
   const data = await callProxy(
     {
       kind: 'questions',
-      chunks: toProxyChunks(doc.chunks),
+      chunks: toProxyChunks(selectSpread(doc.chunks, MAX_REQUEST_CHARS)),
       count,
       difficulty: config.difficulty,
       types: config.types,
@@ -197,7 +201,10 @@ export async function generateCards(
     return generateCardsFromChunks(doc.id, deckId, doc.chunks, count);
   }
 
-  const data = await callProxy({ kind: 'cards', chunks: toProxyChunks(doc.chunks), count }, options);
+  const data = await callProxy(
+    { kind: 'cards', chunks: toProxyChunks(selectSpread(doc.chunks, MAX_REQUEST_CHARS)), count },
+    options,
+  );
   return (data.items as ProxyCardItem[]).map((item) => toCard(doc.id, deckId, item));
 }
 
@@ -216,8 +223,19 @@ export async function answerQuestion(
   options: GenerateOptions = {},
 ): Promise<ChatReply> {
   if (!IS_MOCK_MODE) {
+    /* A question is a query, so the most relevant passages can be picked properly rather than
+       sampled blindly. Falls back to a spread when nothing matches, so an off-topic question
+       still gets an honest "the document does not cover that" instead of a request with no
+       passages at all. */
+    const ranked = bm25Rank(doc.chunks, question, 6).map((match) => match.chunk);
+    const chunks = ranked.length > 0 ? ranked : doc.chunks;
+
     const data = await callProxy(
-      { kind: 'chat', chunks: toProxyChunks(doc.chunks), question },
+      {
+        kind: 'chat',
+        chunks: toProxyChunks(selectSpread(chunks, MAX_REQUEST_CHARS)),
+        question,
+      },
       options,
     );
     return { content: data.content as string, citations: data.citations as ChatReply['citations'] };

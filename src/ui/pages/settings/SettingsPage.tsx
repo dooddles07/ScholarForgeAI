@@ -5,7 +5,6 @@ import { useExportBackup, useImportBackup } from '@/hooks/use-backup';
 import { PageHeader } from '@/ui/components/PageHeader';
 import { Button } from '@/ui/components/primitives/Button';
 import { nav, settings as copy } from '@/copy/labels';
-import { ApiKeyField } from './ApiKeyField';
 import { CloudSyncSection } from './CloudSyncSection';
 import { DangerZone } from './DangerZone';
 
@@ -59,13 +58,6 @@ export default function SettingsPage() {
             </Row>
           </Group>
 
-          <Group title={copy.ai}>
-            <ApiKeyField
-              value={settings.userApiKey}
-              onSave={(userApiKey) => void update({ userApiKey })}
-            />
-          </Group>
-
           <Group title={copy.syncHeading}>
             <CloudSyncSection />
           </Group>
@@ -101,20 +93,6 @@ export default function SettingsPage() {
               )}
             </div>
             <DangerZone />
-          </Group>
-
-          <Group title={copy.about}>
-            <Row label={copy.version}>
-              <span className="font-mono text-base tabular text-fg-muted">0.1.0</span>
-            </Row>
-            <Row label={copy.sourceCode}>
-              <a
-                href="https://github.com/dooddles07/ScholarForgeAI"
-                className="min-h-11 text-base text-accent underline"
-              >
-                On GitHub
-              </a>
-            </Row>
           </Group>
         </div>
       </div>

@@ -38,7 +38,7 @@ An Upstash Redis flag checked on every request. When set, shared-key generation 
 
 Exists so a problem can be stopped in seconds without a deployment. Operating instructions in [DEPLOYMENT.md](DEPLOYMENT.md).
 
-Requests carrying a user-supplied key bypass it, since those cost us nothing and there is no reason to punish them.
+There is no bypass: every request goes through the kill switch, since bring-your-own-key was removed ([ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md)).
 
 ### 3. Per-IP daily limit
 
@@ -60,11 +60,11 @@ Configured as `DAILY_IP_LIMIT`, adjustable without a redeploy.
 
 | Weakness | Response |
 |---|---|
-| Shared NAT means a whole campus or household shares one bucket | Real problem. Mitigated by bring-your-own-key, and by keeping the limit generous. |
+| Shared NAT means a whole campus or household shares one bucket | Real problem, and no longer mitigated by anything but a generous limit — bring-your-own-key used to be the answer here. |
 | A determined abuser rotates addresses | The global ceiling caps total damage |
 | Mobile networks reassign addresses frequently | Occasionally gives a user extra allowance. Harmless. |
 
-The threat model here is casual over-use, not a targeted attack. Defending properly against a determined adversary would require accounts, which we have deliberately rejected.
+The threat model here is casual over-use, not a targeted attack. Every visitor now signs in with Google ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)), so keying the quota by account rather than by hashed IP is an available upgrade if IP-based limiting proves too blunt.
 
 ### 4. Global daily ceiling
 
@@ -72,13 +72,13 @@ A single counter for the whole project, keyed by date.
 
 Set **below** the provider's real daily limit, so we fail with our own clear, honest message instead of an opaque provider 429.
 
-The provider's actual figure is disputed across public sources and changes without notice, so `DAILY_GLOBAL_LIMIT` is configuration set from Google's official page before launch and reviewed quarterly. It is never hardcoded. See [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md).
+The provider's figure changes without notice, so `DAILY_GLOBAL_LIMIT` is configuration set from Groq's console before launch and reviewed quarterly. It is never hardcoded. See [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md).
 
 ### 5. Request size limit
 
-Text exceeding the model's context window is rejected before any provider call, returning `TEXT_TOO_LARGE`.
+Text over `MAX_CHARS` (24,000) is rejected before any provider call, returning `TEXT_TOO_LARGE`.
 
-Prevents a large request from consuming a disproportionate share of the token allowance, and gives a fast clear failure rather than a slow provider error.
+This limit is set by Groq's **8,000 tokens-per-minute** cap, not by the model's context window (131k) — the per-minute budget binds first by a wide margin. The client selects which passages to send so a long document still generates; see [ADR-0013](../08-DECISIONS/ADR-0013-GROQ-OVER-GEMINI.md).
 
 ## Counting rules
 
@@ -86,9 +86,9 @@ Prevents a large request from consuming a disproportionate share of the token al
 
 That means a failed generation still consumes allowance. Deliberate: the request reached the provider and counted against the real limit, so not counting it would let our ceiling overrun the actual one.
 
-The cost is that a user can lose an allowance unit to a provider failure. Mitigated by capping retries, so one failure does not cascade.
+The cost is that a user can lose an allowance unit to a provider failure. There are no retries at all today, so one failure cannot cascade — see [AI-INTEGRATION.md](../03-ARCHITECTURE/AI-INTEGRATION.md).
 
-**Requests with a user-supplied key increment nothing.** They cost us nothing.
+**Every request increments.** There is no longer a category of request that costs the project nothing.
 
 ## Fail closed
 
@@ -106,11 +106,7 @@ This is a designed state that is expected to occur, not an error. Handling it we
 
 > Today's free AI usage has run out.
 >
-> It resets at midnight Pacific time, about 7 hours from now. Everything you have already made still works, including offline.
->
-> If you would rather not wait, you can add your own free key. It takes about two minutes and it is also free.
->
-> [Add my own key] [I'll wait]
+> It resets tomorrow. Everything you have already made still works, including offline.
 
 ### What it never says
 
@@ -129,27 +125,22 @@ Not built today. There is no `quotaRemaining` value anywhere in the real respons
 no way to warn a user before they hit zero — they only find out at the moment a request actually
 fails. A real gap, not a documented design choice.
 
-## Bring your own key
+## There is no escape hatch
 
-The mechanism that makes the whole design work.
+Bring-your-own-key was removed in [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md). Everyone uses the project's shared key, and **when the daily quota is spent, generation stops for everyone until reset.**
 
-- Stored in the user's browser only
-- Sent in the request body on that user's own requests
-- Bypasses every quota layer
-- Never logged, never stored server-side
+This is the single biggest weakness in the current design, and it is worth stating plainly rather than burying. The original argument — that the product "scales to any number of users at zero cost" because heavy users bring their own key — no longer applies. Popularity now degrades the product for everyone instead of routing around itself.
 
-A user with their own key is limited only by their own free tier. Which means **the product scales to any number of users at zero cost**, and the shared key is a convenience for first-time visitors rather than the thing the product depends on.
+The limits above are set generously against Groq's 1,000 requests/day to push that wall as far out as possible, but they do not remove it.
 
-Without this, popularity would break the product. With it, popularity just moves more users onto their own keys.
-
-Flow in [USER-FLOWS.md](../01-PRODUCT/USER-FLOWS.md), wording in [CONTENT-AND-COPY-GUIDE.md](../02-DESIGN/CONTENT-AND-COPY-GUIDE.md).
+Wording in [CONTENT-AND-COPY-GUIDE.md](../02-DESIGN/CONTENT-AND-COPY-GUIDE.md).
 
 ## Deliberately not used
 
 | Not using | Why |
 |---|---|
 | CAPTCHA | Treats every student as a suspect, is an accessibility barrier, and requires a third-party service |
-| Sign-in to generate | Contradicts the no-accounts decision and would lose most first-time users |
+| Quota keyed by account rather than IP | Not built. Sign-in is now mandatory, so this became possible — but it needs server-side token verification, which [ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) put out of scope. |
 | Device fingerprinting | A privacy violation, and trivially defeated |
 | Proof-of-work | Wastes the battery of the exact low-end devices we are targeting |
 | Email verification | Google sign-in already verifies identity; a separate step would be redundant friction |
@@ -168,7 +159,7 @@ Aggregate counters only, no identifiers.
 
 That's the complete set `api/_lib/quota.ts` tracks — no separate exhaustion-event or per-error-code
 counters exist. If the global counter is consistently maxed out early in the day, the response is
-not to buy capacity. It is to promote bring-your-own-key more prominently and consider adding a
+not to buy capacity. It is to raise the ceiling toward the provider's real limit, or add a
 fallback provider.
 
 Detail in [MONITORING-AND-LIMITS.md](MONITORING-AND-LIMITS.md).
@@ -178,7 +169,7 @@ Detail in [MONITORING-AND-LIMITS.md](MONITORING-AND-LIMITS.md).
 | Situation | Response |
 |---|---|
 | Quota spent early, occasionally | Nothing. Working as intended. |
-| Quota spent early, consistently | Promote BYOK more prominently; consider a fallback provider |
-| One IP hitting the limit daily | Probably a shared network. Leave it; BYOK is the answer. |
+| Quota spent early, consistently | Raise the ceiling toward the provider's real limit; consider a fallback provider |
+| One IP hitting the limit daily | Probably a shared network. Consider raising `DAILY_IP_LIMIT`. |
 | Sudden implausible spike | Kill switch, investigate, rotate the key if needed |
 | Key compromised | Kill switch, revoke, rotate. Procedure in [DEPLOYMENT.md](DEPLOYMENT.md) |

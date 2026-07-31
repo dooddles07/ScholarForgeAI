@@ -3,7 +3,7 @@
 Purpose: the actual prompts and response schemas, in one place so they can be reviewed and improved as a set.
 Last updated: 2026-07-30
 
-Prompts live server-side in `api/_lib/gemini.ts`, which means they can be improved without shipping a client release. That matters, because prompt quality is the main lever on output quality and it will need iteration.
+Prompts live server-side in `api/_lib/groq.ts`, which means they can be improved without shipping a client release. That matters, because prompt quality is the main lever on output quality and it will need iteration.
 
 ## Shared system instruction
 

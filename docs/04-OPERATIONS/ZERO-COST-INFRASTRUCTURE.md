@@ -18,14 +18,14 @@ Last updated: 2026-07-31
 | Upstash Redis | Quota counters, kill switch | 256 MB storage, 500K commands/month, 10 GB bandwidth/month (free tier) | Counter writes fail; `api/_lib/quota.ts` fails closed and disables shared-key generation rather than allow unlimited use |
 | Firebase Authentication | Google sign-in | Free, no cap reachable at this project's scale | N/A at this scale |
 | Cloud Firestore (Spark plan) | Optional cloud sync backup (`backups/{uid}`) | 50K reads / 20K writes / 20K deletes per day, no inactivity pause | Sync fails with an honest inline error; local IndexedDB data is completely unaffected, see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) |
-| Google Gemini API | Generation | Free tier, no credit card. Per-model RPM and RPD caps. Daily reset at 00:00 Pacific. | Provider returns 429; we surface an honest message with the reset time and offer bring-your-own-key |
+| Groq API | Generation | Free tier, no credit card. 1,000 requests/day and 8,000 tokens/minute on `openai/gpt-oss-120b`. | We stop before the provider does and surface an honest message with the reset time. There is no alternative path — see [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md) |
 | GitHub | Repository, issues, releases | Free, unlimited for public repositories | None reachable |
 | GitHub Actions | CI | 2,000 minutes/month for public repos | Actually unlimited for public repositories; our usage is trivial regardless |
 | IndexedDB | All user storage | Browser-dependent, typically a percentage of free disk | Warn at 80%, block new uploads at 95%, prompt deletion and export |
 
 ## The binding constraint
 
-Only one limit will realistically be reached: **the Gemini free-tier daily request count.** Everything else has enormous headroom.
+Two Groq limits bind, and both are reachable: **the 1,000-requests/day ceiling**, and — more sharply — **the 8,000-tokens/minute cap**, which is what forces every request to send a selected slice of a document rather than the whole thing. See [ADR-0013](../08-DECISIONS/ADR-0013-GROQ-OVER-GEMINI.md). Everything else has enormous headroom.
 
 ### The number
 
@@ -33,7 +33,7 @@ Public sources disagree, citing anywhere from 250 to 1,500 requests per day depe
 
 **So we do not hardcode it.** The global daily ceiling is a configuration value:
 
-1. Set from Google's official rate-limit documentation immediately before launch
+1. Set from Groq's official rate-limit documentation immediately before launch
 2. Set *below* the real limit, so we fail with our own clear message rather than an opaque provider error
 3. Reviewed at least quarterly, and after any provider announcement
 4. Recorded in [ACTIVITY-LOG.md](../ACTIVITY-LOG.md) whenever changed
@@ -47,16 +47,16 @@ Writing a specific figure into source code or documentation guarantees it become
 | New generation stops | Quizzes, cards, explanations, exams, chat |
 | Everything already made keeps working | Fully, including offline |
 | The user is told plainly | What happened, and the reset time in their local time |
-| An alternative is offered | Bring your own free key, with a three-step guide |
+| No alternative is offered | Bring-your-own-key was removed, see [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md). The reset time is all we can honestly give |
 | No payment is suggested | Ever. See [CONTENT-AND-COPY-GUIDE.md](../02-DESIGN/CONTENT-AND-COPY-GUIDE.md) |
 
 This is a designed state, not a failure. It is expected to happen, and handling it well is a feature.
 
-### Why this is survivable
+### Why this is survivable, and where it is not
 
-Because of bring-your-own-key. A user with their own free key is subject only to their own quota, so the product scales to any number of users at zero cost to the project. The shared key is a convenience for first-time visitors, not the mechanism the product depends on.
+Everything already generated is stored locally and keeps working, offline included. A spent quota costs a user new generation for the rest of the day, not their work.
 
-That is the whole reason the escape hatch exists. See [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md).
+**It is worth being blunt about the limit, though.** [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) originally argued the product "scales to any number of users at zero cost" because heavy users could bring their own key. [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md) removed that escape hatch, so the argument no longer holds. The project still costs $0 — but it stays there by refusing work once the ceiling is hit, not by routing around it. Popularity now degrades the product for everyone rather than absorbing itself.
 
 ## How each cost was designed away
 
@@ -99,11 +99,11 @@ What we do if a free tier disappears or degrades.
 
 | If this happens | Then |
 |---|---|
-| Gemini free tier ends or shrinks badly | Switch the default to OpenRouter free models, and promote bring-your-own-key from escape hatch to primary path. The provider is behind one module, so this is a contained change. |
+| Groq free tier ends or shrinks badly | Switch the default to OpenRouter free models. The provider is behind one module (`api/_lib/groq.ts`), so this is a contained change — but note the replacement must support strict JSON schema, which rules out most models. |
 | Vercel changes its terms | Move to Netlify or Cloudflare Pages. Static output plus one Node function is portable to almost anything. |
-| Upstash Redis becomes unavailable | Rate limiting degrades to in-memory per-instance counters, which is weaker but functional; or shared-key generation is disabled and BYOK becomes required. |
+| Upstash Redis becomes unavailable | Generation fails closed and is disabled entirely — with no BYOK fallback, there is no degraded mode left. |
 | Firestore becomes unavailable | Cloud sync fails or is disabled; every local-only feature — review, quizzes, exams, exports, dashboard — keeps working, since sync is additive, not load-bearing. See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md). |
-| All free AI tiers disappear | The product becomes bring-your-own-key only. Every non-AI feature — review, saved quizzes, exams, exports, dashboard — continues working. |
+| All free AI tiers disappear | Generation stops. Every non-AI feature — review, saved quizzes, exams, exports, dashboard — continues working, which is most of the product by volume. |
 
 The architecture is deliberately arranged so that losing the AI provider degrades the product rather than killing it. Everything already generated is stored locally and keeps working.
 
@@ -115,7 +115,7 @@ Someone forking the project needs:
 |---|---|
 | A Vercel account | Free |
 | An Upstash account | Free |
-| A Google AI Studio API key | Free |
+| A Groq API key | Free |
 | A Firebase project | Optional; only needed for cloud sync |
 | A GitHub account | Free |
 | A domain | Optional; `*.vercel.app` is free |
@@ -130,7 +130,7 @@ Before each release, per [DEFINITION-OF-DONE.md](../05-ENGINEERING/DEFINITION-OF
 2. No new service has been added without a row here naming its limit and its degradation
 3. `npx license-checker --summary` shows only permissive licences
 4. The Vercel, Upstash, and Firebase dashboards show $0
-5. The Gemini global ceiling matches Google's current published limit
+5. `DAILY_GLOBAL_LIMIT` sits below Groq's current published requests/day limit
 
 ## Standing commitment
 

@@ -131,7 +131,7 @@ Tier-1 retrieval sends whole documents, which can be a lot of text. Users on met
 
 OpenRouter is documented as a fallback in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) but not built.
 
-**Argument for building it early:** if Gemini's free tier changes suddenly, having the fallback ready avoids downtime.
+**Argument for building it early:** if Groq's free tier changes suddenly, having the fallback ready avoids downtime. This matters more now that bring-your-own-key is gone (ADR-0014) — there is no other fallback left.
 
 **Argument against:** it doubles the provider surface to test and maintain, and OpenRouter's free-model roster churns constantly, so a fallback built now may need rewriting before it is used.
 

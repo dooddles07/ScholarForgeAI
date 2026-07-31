@@ -7,7 +7,7 @@ Last updated: 2026-07-31
 
 | Reason |
 |---|
-| Your own API key, so you are not sharing a daily quota with strangers |
+| Your own API key, so you are not sharing a daily quota with strangers — the hosted instance has no bring-your-own-key option (ADR-0014) |
 | Your school or class wants its own instance |
 | You want to change it — different subjects, different question styles, your institution's branding |
 | You do not want to depend on someone else's project staying online |
@@ -22,7 +22,7 @@ Last updated: 2026-07-31
 | GitHub account | Free |
 | Vercel account | Free |
 | Upstash account | Free |
-| Google AI Studio API key | Free, no credit card |
+| Groq API key | Free, no credit card |
 | Domain | Optional. You get a free `<project>.vercel.app` subdomain. |
 
 No licence fees, no usage fees, no trial that expires. Every dependency is permissively licensed. Vercel's Hobby tier prohibits commercial use, so a tutoring service or school charging for access would need Vercel's Pro tier — see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) for the reasoning. Free personal or non-commercial instances are unaffected.
@@ -37,10 +37,10 @@ Fork the repository on GitHub to your own account.
 
 ### 2. Get an API key
 
-1. Go to Google AI Studio and sign in with a Google account
+1. Go to [console.groq.com](https://console.groq.com) and sign in
 2. Create an API key
 3. Copy it somewhere safe for a moment
-4. **Check the current rate limits** for the model you plan to use, on Google's official rate-limit page
+4. **Check the current rate limits** in the console — both requests/day and tokens/minute
 
 Write that limit down. You need it in step 5, and it is the one number you should not guess — published figures vary and change.
 
@@ -69,8 +69,8 @@ Project Settings, Environment Variables. Set these for both Production and Previ
 
 | Variable | Type | Value |
 |---|---|---|
-| `GEMINI_API_KEY` | **Secret** | Your key from step 2 |
-| `GEMINI_MODEL` | Plain | `gemini-flash-lite-latest` (a rolling alias — avoid pinning a dated model id, which can be retired for new keys without notice. Use the Lite alias: the regular Flash free-tier daily cap measured as low as 20 requests/day in testing, versus 500/day on Lite for the same account) |
+| `GROQ_API_KEY` | **Secret** | Your key from step 2 |
+| `GROQ_MODEL` | Plain | `openai/gpt-oss-120b`. Only the gpt-oss models support the strict JSON schema this app depends on — llama, qwen and compound all reject it. |
 | `DAILY_GLOBAL_LIMIT` | Plain | Below your real daily limit |
 | `DAILY_IP_LIMIT` | Plain | Per-user daily allowance |
 | `ALLOWED_ORIGIN` | Plain | Your deployed URL |
@@ -78,7 +78,7 @@ Project Settings, Environment Variables. Set these for both Production and Previ
 | `UPSTASH_REDIS_REST_URL` | Plain | From step 3 |
 | `UPSTASH_REDIS_REST_TOKEN` | **Secret** | From step 3 |
 
-**`GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` must be Secrets, not plain variables.** Plain variables are readable in the dashboard and can appear in logs. This is the one thing in the setup you must not get wrong.
+**`GROQ_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` must be Secrets, not plain variables.** Plain variables are readable in the dashboard and can appear in logs. This is the one thing in the setup you must not get wrong.
 
 Set `DAILY_GLOBAL_LIMIT` below your real limit so your users get a clear message from the app rather than an opaque error from the provider.
 
@@ -120,7 +120,7 @@ Depends on who is using it.
 |---|---|
 | Just you | Set both limits high; you cannot realistically drain your own quota |
 | A class of 30 | Divide your daily limit generously and set `DAILY_IP_LIMIT` from that. Note that students on the same school network may share one IP, so lean high. |
-| Public instance | Set `DAILY_IP_LIMIT` modestly and rely on bring-your-own-key for heavy users |
+| Public instance | Set `DAILY_IP_LIMIT` modestly. There is no bring-your-own-key fallback for heavy users (ADR-0014), so the global ceiling is your only protection. |
 
 The shared-NAT problem is real for schools: an entire campus may appear as one address, which means one rate-limit bucket. If you are deploying for a school, set `DAILY_IP_LIMIT` high and let the global ceiling do the actual protecting.
 
@@ -131,7 +131,7 @@ The shared-NAT problem is real for schools: an entire campus may appear as one a
 | Colours, fonts, spacing | `src/styles/tokens.css` — see [DESIGN-SYSTEM.md](../02-DESIGN/DESIGN-SYSTEM.md) |
 | Wording anywhere | `src/copy/` — see [CONTENT-AND-COPY-GUIDE.md](../02-DESIGN/CONTENT-AND-COPY-GUIDE.md) |
 | Name and icons | `index.html`'s manifest tags and `public/icons/` |
-| Question style, difficulty behaviour | `api/_lib/gemini.ts`'s `promptFor` — see [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md) |
+| Question style, difficulty behaviour | `api/_lib/groq.ts`'s `promptFor` — see [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md) |
 | Quota and abuse rules | `api/_lib/quota.ts`, `api/_lib/security.ts` |
 | File size and page limits | The constants in `src/parsing/` and `src/domain/validation/file-check.ts` |
 | Default card session length | `src/persistence/settings.ts` |
@@ -159,9 +159,9 @@ Watch for these when merging:
 ### Rotate your key
 
 1. Kill switch (below)
-2. Revoke the old key in AI Studio
+2. Revoke the old key in the Groq console
 3. Create a new one
-4. Update the `GEMINI_API_KEY` secret in Vercel
+4. Update the `GROQ_API_KEY` secret in Vercel
 5. Clear the kill switch
 
 ### Stop generation immediately
@@ -177,7 +177,7 @@ Users keep everything they have already made, and everything still works offline
 
 ### Watch usage
 
-Google AI Studio shows your real consumption. The Vercel dashboard shows request traffic and function errors. The Upstash console shows your daily key counts against the free-tier command cap.
+The Groq console shows your real consumption. The Vercel dashboard shows request traffic and function errors. The Upstash console shows your daily key counts against the free-tier command cap.
 
 ## Your obligations as a host
 

@@ -90,7 +90,7 @@ Get the schema right now. Changing it later means writing a migration and testin
 3. Create the Upstash Redis database; implement `_lib/quota.ts` with per-IP and global counters and the kill switch
 4. Implement the shared system instruction and the quiz prompt from [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md)
 5. Implement `_lib/schemas.ts` with the quiz response schema
-6. Call Gemini with structured output
+6. Call the provider with structured output
 7. Implement `_lib/validate.ts`: schema conformance, then grounding checks
 8. Drop ungrounded items; retry once if over half fail
 9. Implement the error envelope and every code from [API-CONTRACTS.md](../03-ARCHITECTURE/API-CONTRACTS.md)
@@ -249,7 +249,7 @@ Print on paper. A print stylesheet that looks right in a preview and breaks a qu
 
 **Exit criteria:** v1.0. No new features in this milestone.
 
-1. Build the bring-your-own-key flow with the three-step guide and the privacy note
+1. (Removed) Bring-your-own-key was built and later deleted — see ADR-0014
 2. Verify a user key is never logged or stored server-side
 3. Implement warning-before-the-wall using `quotaRemaining`
 4. Complete the manual accessibility checklist in [ACCESSIBILITY.md](../02-DESIGN/ACCESSIBILITY.md)

@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 /* Only ever reached via dynamic import() to keep the Firebase SDK out of the marketing bundle;
-   these config values are Firebase's public client identifiers, not secrets like GEMINI_API_KEY. */
+   these config values are Firebase's public client identifiers, not secrets like GROQ_API_KEY. */
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,

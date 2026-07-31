@@ -49,7 +49,6 @@ export const DEFAULT_SETTINGS: Settings = {
   reduceMotion: 'system',
   dailyCardLimit: 20,
   focusTimerEnabled: false,
-  userApiKey: null,
   hasSeenInstallPrompt: false,
   hasSeenLocalDataWarning: false,
   lastExportAt: null,

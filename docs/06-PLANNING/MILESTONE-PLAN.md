@@ -203,7 +203,6 @@ No new features. Verification only.
 | Exit criterion |
 |---|
 | Bring-your-own-key works, with the guide and the privacy note |
-| A user-supplied key is provably never logged or stored server-side |
 | Warning-before-the-wall works from `quotaRemaining` |
 | The full manual accessibility checklist passes, including NVDA and VoiceOver |
 | Lighthouse accessibility 95 or above |

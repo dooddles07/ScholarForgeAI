@@ -88,7 +88,7 @@ Mocked provider, no real requests, no quota consumed.
 
 **Client** — retry on retryable codes and not on others; retry count capped; cancellation aborts in flight; partial results preserved on cancel; every error code maps to a domain error; `quotaRemaining` surfaced.
 
-**Function** — quota checked before the provider call; counters increment even on provider failure; BYOK requests bypass quota entirely; foreign origin rejected; kill switch honoured; oversized text rejected before any provider call; malformed provider response triggers exactly one retry; ungrounded items dropped; over half ungrounded triggers a stricter retry then an honest error.
+**Function** — quota checked before the provider call; counters increment even on provider failure; foreign origin rejected; kill switch honoured; oversized text rejected before any provider call; ungrounded items dropped. (No retry logic exists today — see AI-INTEGRATION.md.)
 
 **Explicitly asserted:** the API key never appears in any response body, header, or error. This is the single most important assertion in the suite.
 
@@ -112,7 +112,7 @@ Specs mirror [USER-FLOWS.md](../01-PRODUCT/USER-FLOWS.md):
 4. **Ask the document** — question, cited answer, tap a citation to open the source.
 5. **Export and import** — export a pack, clear storage, import, assert identical state.
 6. **Offline** — load, go offline, reload, assert the app opens and review works while AI actions are disabled with a reason.
-7. **Quota exhausted** — mock the error and assert the message names the reset time, offers BYOK, and never mentions payment.
+7. **Quota exhausted** — mock the error and assert the message names the reset time and never mentions payment.
 
 That last assertion is unusual and deliberate. "No payment language anywhere" is a product commitment, and a test is the only way it stays true as the app grows.
 

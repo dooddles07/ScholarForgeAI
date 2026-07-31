@@ -25,8 +25,8 @@ This is deliberate. Requiring an API key before someone can see the app run woul
 
 Only needed if you are changing prompts or the proxy itself.
 
-1. Get a free key from Google AI Studio
-2. Put it in `.env` as `GEMINI_API_KEY`, along with an Upstash Redis database's REST credentials (see `.env.example`)
+1. Get a free key from the Groq console
+2. Put it in `.env` as `GROQ_API_KEY`, along with an Upstash Redis database's REST credentials (see `.env.example`)
 3. `npx vercel dev`
 
 `api/` runs on Vercel's Node.js runtime, the same as any other Node code — no special tooling needed to reproduce it locally, unlike the Cloudflare Workers runtime this project used to target.

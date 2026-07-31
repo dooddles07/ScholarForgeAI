@@ -278,7 +278,6 @@ interface Settings {
   dailyCardLimit: number;        // default 20
   focusTimerEnabled: boolean;
 
-  userApiKey: string | null;     // BYOK. This browser only. Never transmitted to us.
 
   hasSeenInstallPrompt: boolean;
   hasSeenLocalDataWarning: boolean;
@@ -290,7 +289,7 @@ interface Settings {
 }
 ```
 
-`userApiKey` deserves care. It is stored here for convenience, it is sent only to the AI provider by way of our proxy on that user's own requests, it is never logged, and it is never persisted server-side. The settings screen must state this plainly. See [SECURITY-AND-PRIVACY.md](../04-OPERATIONS/SECURITY-AND-PRIVACY.md).
+`userApiKey` was removed in [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md). Browsers that stored one keep an orphaned value nobody reads; no migration was needed, since the settings table is keyed only by `id`.
 
 ## Dexie schema
 

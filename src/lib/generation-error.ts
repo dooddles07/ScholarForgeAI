@@ -7,7 +7,7 @@ const QUOTA_CODES = new Set(['QUOTA_EXCEEDED', 'SERVICE_DISABLED', 'SERVICE_UNAV
 export function generationErrorMessage(error: unknown): string {
   const code = error instanceof Error && 'code' in error ? String((error as { code: unknown }).code) : undefined;
   if (code && QUOTA_CODES.has(code)) {
-    return `${quota.heading} ${quota.alternative}`;
+    return `${quota.heading} ${quota.wait}`;
   }
   return `${generic.what} ${generic.next}`;
 }

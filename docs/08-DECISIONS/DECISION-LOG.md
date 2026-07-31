@@ -10,7 +10,7 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 | ADR | Decision | Status | Date |
 |---|---|---|---|
 | [ADR-0001](ADR-0001-LOCAL-FIRST-STORAGE.md) | Store everything in the browser; no accounts in v1 | Superseded by ADR-0011 | 2026-07-30 |
-| [ADR-0002](ADR-0002-SHARED-KEY-BEHIND-PROXY.md) | One shared AI key, held server-side behind a proxy | Accepted | 2026-07-30 |
+| [ADR-0002](ADR-0002-SHARED-KEY-BEHIND-PROXY.md) | One shared AI key, held server-side behind a proxy | Accepted (provider superseded by ADR-0013; BYOK escape hatch superseded by ADR-0014) | 2026-07-30 |
 | [ADR-0003](ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md) | Host on Cloudflare Pages rather than Vercel | Superseded by ADR-0009 | 2026-07-30 |
 | [ADR-0004](ADR-0004-VITE-SPA-OVER-NEXTJS.md) | Build a Vite React SPA rather than a Next.js app | Accepted | 2026-07-30 |
 | [ADR-0005](ADR-0005-CLIENT-SIDE-PARSING.md) | Parse all document formats in the browser | Accepted | 2026-07-30 |
@@ -21,6 +21,8 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 | [ADR-0010](ADR-0010-OPTIONAL-CLOUD-SYNC.md) | Optional cloud sync via Firebase, additive to local-first | Accepted (its redirect-over-popup choice superseded by ADR-0012) | 2026-07-31 |
 | [ADR-0011](ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) | Mandatory Google sign-in for app access | Accepted | 2026-07-31 |
 | [ADR-0012](ADR-0012-POPUP-SIGN-IN-OVER-REDIRECT.md) | Google sign-in via popup rather than redirect | Accepted | 2026-07-31 |
+| [ADR-0013](ADR-0013-GROQ-OVER-GEMINI.md) | Generate with Groq rather than Google Gemini | Accepted | 2026-07-31 |
+| [ADR-0014](ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md) | Remove bring-your-own-key; the shared key is the only key | Accepted | 2026-07-31 |
 
 ## Format
 

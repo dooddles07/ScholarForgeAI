@@ -22,14 +22,16 @@ export interface GenerateRequestBody {
   types?: QuestionType[];
 }
 
+/* Nullable rather than optional: Groq's strict mode requires every property to appear in the
+   schema's `required` array, so the model returns an explicit null instead of omitting a key. */
 export interface RawQuestionItem {
   type: QuestionType;
   prompt: string;
-  options?: string[];
-  correctIndex?: number;
-  correctAnswer?: string;
+  options: string[] | null;
+  correctIndex: number | null;
+  correctAnswer: string | null;
   explanation: string;
-  topic?: string;
+  topic: string | null;
   chunkId: string;
   quote: string;
 }
@@ -37,7 +39,7 @@ export interface RawQuestionItem {
 export interface RawCardItem {
   front: string;
   back: string;
-  topic?: string;
+  topic: string | null;
   chunkId: string;
   quote: string;
 }
@@ -47,13 +49,10 @@ export interface RawChatResult {
   citations: { chunkId: string; quote: string }[];
 }
 
-/* A rolling alias, not a pinned version: gemini-2.5-flash was retired for new API keys without
-   notice mid-project, which is exactly the failure this avoids going forward.
-   Lite, not the full Flash alias: the free tier's daily-request cap on regular Flash models
-   measured as low as 20 requests/day across the whole project during testing, while the Lite
-   tier measured 500/day for the same account. Structured JSON generation from a short passage
-   doesn't need the larger model's extra reasoning depth. */
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-flash-lite-latest';
+/* Only the gpt-oss models support strict json_schema on Groq — llama-3.3-70b, llama-3.1-8b,
+   qwen3.6 and compound all reject the request outright, verified against the live API. Structured
+   output is not optional here: the grounding rule depends on every item carrying a chunk id. */
+const MODEL = process.env.GROQ_MODEL ?? 'openai/gpt-oss-120b';
 
 /* The model only ever sees chunk id + text, never a page number: page numbers in the final
    citation always come from our own chunk data, never from the model's own claim. */
@@ -64,81 +63,70 @@ function passagesBlock(chunks: GroundedChunk[]): string {
 const GROUNDING_RULE =
   'Use only the passages given below. Every item you produce must cite the exact chunk id ' +
   'it came from, copied from the [chunk ...] marker, and a short quote from that chunk. ' +
-  'Never invent a fact, a number, or a chunk id that is not present below.';
+  'Never invent a fact, a number, or a chunk id that is not present below. ' +
+  'Set any field that does not apply to null rather than omitting it.';
 
 const ALL_QUESTION_TYPES: QuestionType[] = ['mcq', 'trueFalse', 'shortAnswer', 'fillBlank'];
 
-function questionSchema(count: number, types: QuestionType[] = ALL_QUESTION_TYPES) {
+/* Groq's strict mode rejects a schema unless every object sets additionalProperties:false and
+   lists every one of its properties in `required`. Optional fields are expressed as nullable
+   unions instead — both rules verified against the live API. */
+function objectSchema(properties: Record<string, unknown>) {
   return {
     type: 'object',
-    properties: {
-      items: {
-        type: 'array',
-        maxItems: count,
-        items: {
-          type: 'object',
-          properties: {
-            type: { type: 'string', enum: types.length > 0 ? types : ALL_QUESTION_TYPES },
-            prompt: { type: 'string' },
-            options: { type: 'array', items: { type: 'string' } },
-            correctIndex: { type: 'integer' },
-            correctAnswer: { type: 'string' },
-            explanation: { type: 'string' },
-            topic: { type: 'string' },
-            chunkId: { type: 'string' },
-            quote: { type: 'string' },
-          },
-          required: ['type', 'prompt', 'explanation', 'chunkId', 'quote'],
-        },
-      },
-    },
-    required: ['items'],
+    additionalProperties: false,
+    properties,
+    required: Object.keys(properties),
   };
+}
+
+function questionSchema(count: number, types: QuestionType[] = ALL_QUESTION_TYPES) {
+  return objectSchema({
+    items: {
+      type: 'array',
+      maxItems: count,
+      items: objectSchema({
+        type: { type: 'string', enum: types.length > 0 ? types : ALL_QUESTION_TYPES },
+        prompt: { type: 'string' },
+        options: { type: ['array', 'null'], items: { type: 'string' } },
+        correctIndex: { type: ['integer', 'null'] },
+        correctAnswer: { type: ['string', 'null'] },
+        explanation: { type: 'string' },
+        topic: { type: ['string', 'null'] },
+        chunkId: { type: 'string' },
+        quote: { type: 'string' },
+      }),
+    },
+  });
 }
 
 function cardSchema(count: number) {
-  return {
-    type: 'object',
-    properties: {
-      items: {
-        type: 'array',
-        maxItems: count,
-        items: {
-          type: 'object',
-          properties: {
-            front: { type: 'string' },
-            back: { type: 'string' },
-            topic: { type: 'string' },
-            chunkId: { type: 'string' },
-            quote: { type: 'string' },
-          },
-          required: ['front', 'back', 'chunkId', 'quote'],
-        },
-      },
+  return objectSchema({
+    items: {
+      type: 'array',
+      maxItems: count,
+      items: objectSchema({
+        front: { type: 'string' },
+        back: { type: 'string' },
+        topic: { type: ['string', 'null'] },
+        chunkId: { type: 'string' },
+        quote: { type: 'string' },
+      }),
     },
-    required: ['items'],
-  };
+  });
 }
 
-const chatSchema = {
-  type: 'object',
-  properties: {
-    content: { type: 'string' },
-    citations: {
-      type: 'array',
-      maxItems: 2,
-      items: {
-        type: 'object',
-        properties: {
-          chunkId: { type: 'string' },
-          quote: { type: 'string' },
-        },
-        required: ['chunkId', 'quote'],
-      },
-    },
+const chatSchema = objectSchema({
+  content: { type: 'string' },
+  citations: {
+    type: 'array',
+    maxItems: 2,
+    items: objectSchema({
+      chunkId: { type: 'string' },
+      quote: { type: 'string' },
+    }),
   },
-  required: ['content', 'citations'],
-};
+});
 
 const TYPE_LABELS: Record<QuestionType, string> = {
   mcq: 'multiple choice',
@@ -189,37 +177,41 @@ function promptFor(body: GenerateRequestBody): { prompt: string; schema: object 
   };
 }
 
-export class GeminiError extends Error {
-  constructor(message: string, readonly status: number) {
+export class ProviderError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
     super(message);
   }
 }
 
-export async function callGemini(
+export async function callGroq(
   body: GenerateRequestBody,
   apiKey: string,
 ): Promise<RawQuestionItem[] | RawCardItem[] | RawChatResult> {
   const { prompt, schema } = promptFor(body);
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: schema },
-      }),
-    },
-  );
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: body.kind, strict: true, schema },
+      },
+    }),
+  });
 
   if (!response.ok) {
-    throw new GeminiError(`Gemini responded ${response.status}`, response.status);
+    throw new ProviderError(`Groq responded ${response.status}`, response.status);
   }
 
   const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (typeof text !== 'string') throw new GeminiError('No text in Gemini response', 502);
+  const text = data?.choices?.[0]?.message?.content;
+  if (typeof text !== 'string') throw new ProviderError('No content in Groq response', 502);
 
   const parsed = JSON.parse(text);
 

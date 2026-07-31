@@ -20,9 +20,8 @@ All in Upstash Redis. All plain integers. No identifier attached to any of them.
 | Kill switch | `killswitch` (boolean) | Disables shared-key generation without a redeploy |
 
 That's the complete set `api/_lib/quota.ts` actually tracks. Richer counters — per task, per error
-code, quota-exhaustion events, BYOK adoption — aren't built. That's a real gap in visibility, not a
-privacy-driven omission like the table below: knowing how well the BYOK escape hatch is working
-would be useful and currently isn't measurable at all.
+code, quota-exhaustion events — aren't built. That's a real gap in visibility, not a
+privacy-driven omission like the table below.
 
 ### What is deliberately absent
 
@@ -42,10 +41,10 @@ would be useful and currently isn't measurable at all.
 | Vercel Functions | Invocations, errors, execution duration | Free |
 | Upstash Redis | Command volume against the free allowance | Free |
 | Firebase | Auth and Firestore usage against the Spark plan quota | Free |
-| Google AI Studio | Actual API usage against the real quota | Free |
+| Groq console | Actual API usage against the real quota | Free |
 | GitHub | Issues, stars, forks, Actions minutes | Free |
 
-The Google AI Studio figure is the authoritative one. Our own global counter is an approximation, which is exactly why the ceiling is set below the real limit.
+The Groq console figure is the authoritative one. Our own global counter is an approximation, which is exactly why the ceiling is set below the real limit.
 
 ## Reading the counters
 
@@ -55,8 +54,8 @@ Counters are read from the Upstash console's Data Browser, or via its REST API w
 
 | Signal | Likely meaning | Response |
 |---|---|---|
-| Global requests near the ceiling daily | Real usage, and the shared key is undersized | Promote BYOK more prominently; consider a fallback provider |
-| Vercel Functions error rate rising | Provider instability, or a bug in `api/generate.ts` | Check the Vercel Functions dashboard and Gemini's status page |
+| Global requests near the ceiling daily | Real usage, and the shared key is undersized | Raise the ceiling toward the provider limit; consider a fallback provider |
+| Vercel Functions error rate rising | Provider instability, or a bug in `api/generate.ts` | Check the Vercel Functions dashboard and Groq's status page |
 | Upstash command volume near the free allowance | Unexpected; would mean enormous traffic | Reduce counter granularity |
 | Sudden implausible spike | Possible abuse or key leak | Kill switch, investigate, rotate if needed |
 | Build failures | A broken commit | Fix; check CI passed before merge |
@@ -83,7 +82,7 @@ What compensates:
 |---|---|
 | Weekly | Global daily counter, spot-check a few per-IP counters |
 | Weekly | GitHub issues |
-| Monthly | Google AI Studio usage against our counter, to confirm they agree |
+| Monthly | Groq console usage against our counter, to confirm they agree |
 | Monthly | Vercel, Upstash, and Firebase dashboards show $0 |
 | Quarterly | `DAILY_GLOBAL_LIMIT` against Google's current published limit |
 | Quarterly | `npm audit` and dependency updates |
@@ -124,8 +123,8 @@ Everything with a ceiling, in one table.
 
 | Limit | Value | At the limit |
 |---|---|---|
-| Gemini daily requests | Configured, below the provider's real limit | Honest message, reset time, BYOK offered |
-| Per-IP daily requests | Configured, generous | Same message, BYOK offered |
+| Groq daily requests | Configured, below Groq's 1,000/day | Honest message and reset time; no alternative (ADR-0014) |
+| Per-IP daily requests | Configured, generous | Same message |
 | Vercel Node Functions | 60s max duration, generous monthly invocation allowance | Generation fails; the app still loads and offline works |
 | Upstash Redis | 256 MB / 500K commands per month | Fail closed: generation disabled |
 | Vercel builds | Soft fair-use cap on Hobby | Builds pause; see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) |

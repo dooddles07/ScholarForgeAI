@@ -1,7 +1,7 @@
 /* Marketing page strings. Same voice as the app: plain, brief, honest, on the reader's side. */
 
 export const hero = {
-  eyebrow: 'Free forever, open source',
+  eyebrow: 'Free forever',
   headline: 'Turn your notes into practice',
   sub: 'Upload a PDF, slides, or a book. Get quizzes, flashcards, explanations, and a practice exam.',
   dropzone: 'Drop a file here, or tap to choose one',
@@ -85,34 +85,6 @@ export const privacy = {
   staysLabel: 'Stays on your device',
 } as const;
 
-export const cost = {
-  heading: 'Free means free',
-  body: 'No subscription, no trial, no locked features, no ads. This is not an introductory offer that expires in six months. The whole thing was built around costing nothing to run, which is why it can stay free.',
-  tableCaption: 'Every service in the stack, and what it costs',
-  columns: ['What it does', 'Service', 'Free tier', 'Cost'],
-  rows: [
-    ['Hosting', 'Vercel Hobby', '100GB bandwidth a month', '$0'],
-    ['AI proxy', 'Vercel Serverless Functions', 'Generous free execution allowance', '$0'],
-    ['Quota counters', 'Upstash Redis', '10,000 commands a day', '$0'],
-    ['Generation', 'Google Gemini', 'Free tier, no card required', '$0'],
-    ['Code and CI', 'GitHub', 'Free for public repositories', '$0'],
-    ['Your data', 'Your own browser', 'Whatever your disk allows', '$0'],
-  ],
-  total: '$0 a month. That is the whole bill.',
-  footnote:
-    'When the shared daily allowance runs out we tell you when it resets and offer you a free key of your own. We never ask for a card, because there is nothing to charge you for.',
-} as const;
-
-export const openSource = {
-  heading: 'Take it and run your own',
-  body: [
-    'The planning is public, not just the code. Forty-odd documents covering what gets built, how, and why. If you disagree with a decision, the reasoning is written down and you can argue with it.',
-    'Setting up your own copy takes about twenty minutes and costs nothing. Do it if you want your own quota, if your school wants its own instance, or if you want to change how the questions are written.',
-  ],
-  primaryCta: 'Read the source',
-  secondaryCta: 'Self-hosting guide',
-} as const;
-
 export const closing = {
   heading: 'Bring a file',
   body: 'Sign in with Google, nothing to install, nothing to pay. Pick something you have an exam on.',
@@ -127,7 +99,6 @@ export const nav = {
   links: [
     { label: 'How it works', href: '#how-it-works' },
     { label: 'What you get', href: '#what-you-get' },
-    { label: 'What it costs', href: '#cost' },
   ],
   openApp: 'Open the app',
 } as const;

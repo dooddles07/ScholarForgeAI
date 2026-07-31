@@ -51,7 +51,7 @@ Free is a hard constraint, not an aspiration. It means:
 
 Every service we depend on is listed in [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md) with its specific limit and what degrades when that limit is reached. If a dependency cannot be justified at $0, it does not go in.
 
-The one thing we do not promise is unlimited AI generation. A shared free API key has a real daily ceiling. When it runs out, the app says so plainly and offers the user the option of supplying their own free key. It never silently fails and never asks for money.
+The one thing we do not promise is unlimited AI generation. A shared free API key has a real daily ceiling. When it runs out, the app says so plainly and tells the user when it resets. It never silently fails and never asks for money.
 
 ## Guiding principles
 

@@ -32,7 +32,6 @@ Only this:
 
 - **Extracted document text**, and only the portion needed for the specific request being made
 - **Generation options**, such as question count and difficulty
-- **A user-supplied API key**, on that user's own requests, when they have provided one
 
 It is used to fulfil the request and then discarded. It is never written to storage, never logged, and never retained after the response.
 
@@ -44,18 +43,17 @@ It is used to fulfil the request and then discarded. It is never written to stor
 | Flashcards, decks, schedules | The user's browser | The user only |
 | Quiz and exam results | The user's browser | The user only |
 | Progress and review history | The user's browser | The user only |
-| A user-supplied API key | The user's browser | The user only |
 | Aggregate request counters | Upstash Redis | Us, as integers with no identifier |
 | The project API key | Vercel environment variables | Us only |
 | Cloud sync backup (opt-in only) | Firebase Firestore, one document per user at `backups/{uid}` | The signed-in user only, enforced by Firestore security rules |
 
-Everything in the first six rows is local to the device. See [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md).
+Everything in the first four rows is local to the device. See [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md).
 
 **Cloud sync (opt-in).** If, and only if, a user signs in with Google under Settings → "Sync across devices," their `backups/{uid}` Firestore document holds the same data as the first three rows above (documents, decks, cards, quizzes, attempts, exams, conversations, review log) plus their Google account email address, which Firebase Auth uses as the account identifier. Nothing is synced to Firestore unless the user explicitly signs in and taps "Sync now." See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md).
 
 ## The one secret
 
-`GEMINI_API_KEY`, held as a Vercel environment variable.
+`GROQ_API_KEY`, held as a Vercel environment variable.
 
 **Rules, non-negotiable:**
 
@@ -73,20 +71,6 @@ The reason for the strictness: a key that reaches a browser is published, and a 
 - CI scans the built bundle for anything resembling an API key and fails the build on a match
 - `.env` files are gitignored, and only `.env.example` with placeholder values is committed
 - Key rotation is documented in [DEPLOYMENT.md](DEPLOYMENT.md) and can be done in minutes
-
-## User-supplied keys
-
-A user's own key is their credential, not ours.
-
-| Rule |
-|---|
-| Stored in the user's browser only |
-| Sent as a request header, used for that request, then discarded |
-| Never written to any server-side storage |
-| Never logged, in full or in part |
-| Never included in any error message or counter |
-
-The settings screen states all of this in plain language, because asking someone to paste a credential without explaining what happens to it is not acceptable.
 
 ## Threat model
 
@@ -122,7 +106,7 @@ The blast radius is also inherently small. The worst realistic outcome is a bad 
 | Threat | Why accepted |
 |---|---|
 | Determined abuser rotating IP addresses | The global ceiling caps total damage. The realistic threat is casual overuse, not a targeted attack. |
-| Users behind shared NAT sharing a rate-limit bucket | Unavoidable with IP-based limiting. Mitigated by bring-your-own-key. |
+| Users behind shared NAT sharing a rate-limit bucket | Unavoidable with IP-based limiting, and no longer mitigated by bring-your-own-key (ADR-0014). Keying quota by signed-in account is the available upgrade. |
 | A user losing local data to a cleared cache | No server copy exists, by design. Mitigated by export prompting, not eliminated. |
 | Malicious content in a document | It only affects the user who uploaded it |
 
@@ -225,7 +209,7 @@ Response commitment: acknowledge within seven days, and fix or explain within th
 If the shared key is compromised:
 
 1. Activate the kill switch, disabling shared-key generation without a redeploy
-2. Revoke the key in Google AI Studio
+2. Revoke the key in the Groq console
 3. Issue a new key and update the Vercel environment variable
 4. Deactivate the kill switch
 5. Determine how it leaked and close that path

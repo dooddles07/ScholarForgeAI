@@ -62,7 +62,7 @@ The most useful information about a tool like this comes from people telling you
 
 ### Six months in, we are doing well if
 
-- The shared daily quota is regularly exhausted, which means real usage, and the bring-your-own-key path is absorbing it gracefully
+- The shared daily quota is regularly exhausted, which means real usage — though with no bring-your-own-key path left (ADR-0014), this now caps growth rather than absorbing it
 - Bug reports are about specific document edge cases rather than the app being fundamentally broken
 - At least one external contributor has merged a pull request
 - At least one instance is running somewhere we did not set up
@@ -75,7 +75,7 @@ The most useful information about a tool like this comes from people telling you
 | Traffic but almost no AI requests | People land and leave before uploading. The landing page is the problem. |
 | Many parse failures | Format support is too narrow, or the error messages are not steering people to a fix |
 | Repeated "question was wrong" reports | Prompt quality problem, not a UI problem. Fix in [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md). |
-| Quota exhausted before noon every day | Shared key is undersized. Push BYOK harder, or add a fallback provider. |
+| Quota exhausted before noon every day | Shared key is undersized. Raise the ceiling toward the provider limit, or add a fallback provider. |
 | Issues asking for accounts and sync | The local-only decision needs revisiting sooner than v2 |
 | No forks, no contributors | The open-source goal is not being met. Look at setup friction. |
 

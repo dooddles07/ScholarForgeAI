@@ -192,25 +192,14 @@ That last one is unusual and deliberate. Silently returning eight questions when
 >
 > It resets at {time}, about {duration} from now. Everything you have already made still works, including offline.
 >
-> If you would rather not wait, you can add your own free key. It takes about two minutes and it is also free.
->
-> [Add my own key] [I'll wait]
+> Everything you have already made still works, including offline.
 
 No "upgrade". No payment. A real alternative and an honest reset time.
 
-### Bring your own key
+### (Removed) Bring your own key
 
-| Element | Copy |
-|---|---|
-| Heading | Use your own free key |
-| Intro | Google gives out free API keys. With your own, you are not sharing a daily limit with everyone else. |
-| Step 1 | Go to Google AI Studio and sign in |
-| Step 2 | Click Get API key, then Create API key |
-| Step 3 | Paste it below |
-| Field label | Your API key |
-| Privacy note | Your key is saved in this browser only. It is never sent to our servers and never stored anywhere else. |
-| Save | Save my key |
-| Confirmation | Saved. You are no longer sharing the daily limit. |
+This screen no longer exists — see [ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md).
+
 
 ### Quiz
 

@@ -156,7 +156,7 @@ Two decisions in the sequence are worth explaining.
 
 **Why offline late.** It is genuinely valuable, but nothing depends on it, and it is easier to add once the feature surface has stopped moving. Caching a shell that is still changing weekly is wasted work.
 
-**Why bring-your-own-key at v1.0 rather than earlier.** Before launch, the shared quota comfortably covers development and a handful of testers. The escape hatch matters the moment real users arrive, which is exactly v1.0.
+**Bring-your-own-key was removed before launch** (ADR-0014). Everyone uses the shared key, which makes the daily quota a hard ceiling rather than a soft one.
 
 ## Cutting
 

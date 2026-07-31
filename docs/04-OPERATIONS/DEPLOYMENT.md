@@ -5,7 +5,7 @@ Last updated: 2026-07-31
 
 Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md), which supersedes [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md). Shared-key proxy design in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) and [RATE-LIMITING-AND-ABUSE.md](RATE-LIMITING-AND-ABUSE.md).
 
-**Current status:** `api/generate.ts` is built and `src/ai/client.ts` calls it in production builds (`IS_MOCK_MODE` is `import.meta.env.DEV`, so `npm run dev` still runs on fixtures with no credentials, and a real build calls the live proxy). It needs a Gemini key and an Upstash Redis database to actually work once deployed — see step 4 below.
+**Current status:** `api/generate.ts` is built and `src/ai/client.ts` calls it in production builds (`IS_MOCK_MODE` is `import.meta.env.DEV`, so `npm run dev` still runs on fixtures with no credentials, and a real build calls the live proxy). It needs a Groq key and an Upstash Redis database to actually work once deployed — see step 4 below.
 
 ## Prerequisites
 
@@ -13,19 +13,19 @@ Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFL
 |---|---|
 | Vercel account | Free |
 | GitHub repository | Free |
-| Google AI Studio API key | Free |
+| Groq API key | Free |
 | Upstash account | Free |
 | Node 20 or later | Free |
 
 ## First-time setup
 
-### 1. Get a Gemini API key
+### 1. Get a Groq API key
 
-1. Go to Google AI Studio and sign in
+1. Go to [console.groq.com](https://console.groq.com) and sign in
 2. Create an API key
-3. Check the current rate limits for `gemini-flash-lite-latest` on Google's official rate-limit page — this number changes without notice and must never be hardcoded, see [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md). Use the rolling alias, not a dated model id: `gemini-2.5-flash` was retired for new API keys mid-project with no warning, which is exactly what the alias avoids. Use the **Lite** alias specifically: the regular Flash free-tier daily cap measured as low as 20 requests/day during this project's own testing, versus 500/day on Lite for the same account.
+3. Check the current rate limits for `openai/gpt-oss-120b` in the console — these change without notice and must never be hardcoded, see [ZERO-COST-INFRASTRUCTURE.md](ZERO-COST-INFRASTRUCTURE.md). At the time of writing: 1,000 requests/day and 8,000 tokens/minute.
 
-Record that limit. It sets `DAILY_GLOBAL_LIMIT` in step 4.
+Record both. The daily figure sets `DAILY_GLOBAL_LIMIT` in step 4; the per-minute figure is what `MAX_CHARS` in `api/generate.ts` is sized against.
 
 ### 2. Create an Upstash Redis database
 
@@ -52,16 +52,16 @@ In Project Settings, Environment Variables. Set for both Production and Preview.
 
 | Variable | Type | Purpose |
 |---|---|---|
-| `GEMINI_API_KEY` | **Secret** | The shared project key |
-| `GEMINI_MODEL` | Plain | `gemini-flash-lite-latest` |
-| `DAILY_GLOBAL_LIMIT` | Plain | Set **below** the provider's real daily limit (start small — 50 is a reasonable default for a personal demo) |
-| `DAILY_IP_LIMIT` | Plain | Per-visitor daily allowance (10 is a reasonable default) |
+| `GROQ_API_KEY` | **Secret** | The shared project key |
+| `GROQ_MODEL` | Plain | `openai/gpt-oss-120b` — only the gpt-oss models support strict JSON schema |
+| `DAILY_GLOBAL_LIMIT` | Plain | Set **below** Groq's real daily limit (800 against a 1,000/day tier) |
+| `DAILY_IP_LIMIT` | Plain | Per-visitor daily allowance (40 is a reasonable default) |
 | `ALLOWED_ORIGIN` | Plain | The deployed origin, e.g. `https://your-project.vercel.app` |
 | `IP_HASH_SALT` | **Secret** | Any random string — mixed into the IP hash so the quota key can never be reversed to a real address |
 | `UPSTASH_REDIS_REST_URL` | Plain | From step 2 |
 | `UPSTASH_REDIS_REST_TOKEN` | **Secret** | From step 2 |
 
-`GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` must be created as **Secrets**, not plain variables. Plain variables are readable in the dashboard and appear in logs.
+`GROQ_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` must be created as **Secrets**, not plain variables. Plain variables are readable in the dashboard and appear in logs.
 
 ### 5. Deploy
 
@@ -76,7 +76,7 @@ Work through this list against the live deployment:
 - [ ] Generate a quiz; real questions appear with page citations (not the mock fixtures)
 - [ ] Ask-your-document chat returns a real answer with a citation
 - [ ] Export a deck to CSV; export and restore a backup file
-- [ ] `GEMINI_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` do not appear anywhere in the built JS bundle — search the deployed bundle, not the source
+- [ ] `GROQ_API_KEY`, `UPSTASH_REDIS_REST_TOKEN`, and `IP_HASH_SALT` do not appear anywhere in the built JS bundle — search the deployed bundle, not the source
 - [ ] `/api/generate` rejects a request carrying a foreign `Origin` header
 - [ ] Go offline; the app shell still loads and card review still works
 - [ ] Install to a phone home screen; it opens standalone
@@ -177,7 +177,7 @@ Both live in `vercel.json` at the repo root (there is no `public/_headers` or `p
 Takes a couple of minutes and needs no redeploy.
 
 1. Set the kill switch (see below)
-2. Revoke the old key in Google AI Studio
+2. Revoke the old key in the Groq console
 3. Create a new key
 4. Update the `GEMINI_API_KEY` secret in the Vercel dashboard
 5. Clear the kill switch
@@ -198,7 +198,7 @@ curl -X POST "$UPSTASH_REDIS_REST_URL/del/killswitch" \
   -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
 ```
 
-While active, the proxy returns `SERVICE_DISABLED`. Everything already stored keeps working. Requests carrying a user-supplied key (via Settings → your own API key) are unaffected, since those cost the shared quota nothing.
+While active, the proxy returns `SERVICE_DISABLED` for every request — there is no bring-your-own-key path that bypasses it ([ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md)). Everything already stored keeps working.
 
 Use it if the key is compromised, if unexplained usage appears, or if the provider is behaving strangely.
 

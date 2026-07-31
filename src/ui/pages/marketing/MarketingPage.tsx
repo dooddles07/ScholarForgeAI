@@ -8,8 +8,6 @@ import { HowItWorks } from './sections/HowItWorks';
 import { Output } from './sections/Output';
 import { Grounding } from './sections/Grounding';
 import { Privacy } from './sections/Privacy';
-import { Cost } from './sections/Cost';
-import { OpenSource } from './sections/OpenSource';
 import { Closing } from './sections/Closing';
 import '@/styles/marketing.css';
 
@@ -40,15 +38,13 @@ export default function MarketingPage() {
         <Output />
         <Grounding />
         <Privacy />
-        <Cost />
-        <OpenSource />
         <Closing onFile={handleFile} />
       </main>
 
       <footer className="border-t border-ink-line/70 py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 text-sm text-ink-muted sm:px-8">
           <p>ScholarForge AI</p>
-          <p>Free forever. Google sign-in required. Open source.</p>
+          <p>Free forever. Google sign-in required.</p>
         </div>
       </footer>
     </div>

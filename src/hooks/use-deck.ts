@@ -5,7 +5,6 @@ import { db } from '@/persistence/db';
 import { saveCards, saveDeck } from '@/persistence/study';
 import { generateCards } from '@/ai/client';
 import { generationErrorMessage } from '@/lib/generation-error';
-import { useSettings } from './use-settings';
 
 export function useDeckCards(documentId: string | undefined) {
   return useLiveQuery(
@@ -30,7 +29,6 @@ export function useDueCards(limit: number) {
 export function useGenerateDeck() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { settings } = useSettings();
 
   const generate = useCallback(
     async (doc: StoredDocument, count = 12) => {
@@ -48,7 +46,7 @@ export function useGenerateDeck() {
             createdAt: Date.now(),
           });
         }
-        const cards = await generateCards(doc, deckId, count, { apiKey: settings.userApiKey });
+        const cards = await generateCards(doc, deckId, count);
         await saveCards(cards);
       } catch (err) {
         setError(generationErrorMessage(err));
@@ -56,7 +54,7 @@ export function useGenerateDeck() {
         setGenerating(false);
       }
     },
-    [settings.userApiKey],
+    [],
   );
 
   return { generate, generating, error };

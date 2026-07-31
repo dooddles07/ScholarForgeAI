@@ -115,7 +115,7 @@ A free tier measured in hundreds of daily requests, shared across all users.
 
 **Already mitigated**
 
-- Bring-your-own-key. A user with their own key is limited only by their own tier, so **the product scales to any number of users at zero cost.** This is the mitigation that makes the whole design viable.
+- ~~Bring-your-own-key.~~ **Removed** ([ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md)). This was the mitigation that made the design scale at zero cost; without it the shared quota is a hard ceiling and this risk is materially worse.
 - The global ceiling is set below the provider's real limit, so failure is clear rather than opaque.
 - Per-IP limits prevent one user draining the pool.
 - Generation is batched: one request for twenty questions, not twenty requests. Request count is the binding constraint, so batching is the highest-value optimisation.
@@ -124,7 +124,7 @@ A free tier measured in hundreds of daily requests, shared across all users.
 
 **This is a designed state, not a failure.** Hitting the quota regularly would mean the project is being used, which is the goal.
 
-**If it becomes constant:** promote BYOK more prominently, and consider implementing the documented OpenRouter fallback. Do not buy capacity; that would break the defining constraint.
+**If it becomes constant:** raise the ceiling toward the provider's real limit, and consider implementing the documented OpenRouter fallback. Do not buy capacity; that would break the defining constraint.
 
 ---
 
@@ -132,7 +132,7 @@ A free tier measured in hundreds of daily requests, shared across all users.
 
 **Likelihood: medium over a multi-year horizon. Impact: medium.**
 
-Free tiers get worse. Gemini's rate limits could shrink, Vercel's or Upstash's terms could change.
+Free tiers get worse. Groq's rate limits could shrink, Vercel's or Upstash's terms could change.
 
 **Already mitigated**
 
@@ -142,7 +142,7 @@ Free tiers get worse. Gemini's rate limits could shrink, Vercel's or Upstash's t
 - Static output plus one function is portable to almost any host.
 - Fallback plans for each dependency in [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATIONS/ZERO-COST-INFRASTRUCTURE.md).
 
-**Worst case:** all free AI tiers vanish. The product becomes bring-your-own-key only, and every non-AI feature — review, saved quizzes, exams, exports, dashboard — keeps working. **Losing the provider degrades the product rather than killing it**, which was a deliberate architectural goal.
+**Worst case:** all free AI tiers vanish. Generation stops, and every non-AI feature — review, saved quizzes, exams, exports, dashboard — keeps working. **Losing the provider degrades the product rather than killing it**, which was a deliberate architectural goal.
 
 ---
 
@@ -237,7 +237,7 @@ That last point is worth stating. A neglected project with a server and a databa
 
 | Risk | Why accepted |
 |---|---|
-| Users behind shared NAT share a rate-limit bucket | Unavoidable with IP-based limiting; BYOK is the answer |
+| Users behind shared NAT share a rate-limit bucket | Unavoidable with IP-based limiting; keying quota by signed-in account is the available upgrade |
 | A determined abuser rotates IP addresses | The global ceiling caps damage; defending properly needs accounts |
 | Read-aloud quality varies by platform | Web Speech API limitation, and no free alternative exists |
 | Scanned documents cannot be used | Out of scope for v1, stated honestly |

@@ -34,7 +34,7 @@ Tap "Quiz me"
   │  10 questions · Medium · whole document · mixed types
   │  A "Start" button that works without touching any of it.
   ▼
-Generating ────────► Quota exhausted ────► Plain message + reset time + BYOK offer
+Generating ────────► Quota exhausted ────► Plain message + reset time
   │  Cancellable. Shows what it is doing.
   ▼
 First question on screen
@@ -100,8 +100,8 @@ Open a document ─► "Ask about this"
 Type a question
   ▼
 Retrieval decides:
-  ├── Document fits the context window ──► send the whole text
-  └── Document is long ──────────────────► BM25 selects the most relevant chunks
+  └── BM25 selects the most relevant chunks, always — the provider's
+      per-minute token cap means the whole document never fits (ADR-0013)
   ▼
 Answer with inline page references [p. 47]
   │  Tap a reference ─► the source passage opens
@@ -138,15 +138,11 @@ User taps "Quiz me"
   ▼
 Proxy reports the shared daily quota is spent
   ▼
-Screen states: what happened, when it resets (in local time), and the two options:
-  ├── Wait for the reset ──► everything already saved still works offline
-  └── Use your own free key
-        ▼
-      Short guide: where to get a free Google AI Studio key, three steps, with a link
-        ▼
-      Paste the key ─► stored in this browser only, never sent to our servers
-        ▼
-      Unlimited by our quota; subject only to the user's own free-tier limits
+Screen states: what happened and when it resets (in local time)
+  ▼
+Everything already saved still works, offline included
+  ▼
+There is no alternative path — bring-your-own-key was removed (ADR-0014)
 ```
 
 No paywall. No "upgrade". No dark pattern. The word "premium" does not exist in this product.

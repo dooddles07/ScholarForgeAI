@@ -9,7 +9,7 @@ function proxyError(code: string): Error {
 describe('generationErrorMessage', () => {
   it('shows the honest quota message for QUOTA_EXCEEDED', () => {
     expect(generationErrorMessage(proxyError('QUOTA_EXCEEDED'))).toBe(
-      `${quota.heading} ${quota.alternative}`,
+      `${quota.heading} ${quota.wait}`,
     );
   });
 

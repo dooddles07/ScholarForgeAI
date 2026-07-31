@@ -35,7 +35,7 @@ These are definitional, not preferences.
 
 | Decision | Choice | Recorded in |
 |---|---|---|
-| AI provider | Google Gemini 2.5 Flash, free tier, one shared key | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
+| AI provider | Groq `openai/gpt-oss-120b`, free tier, one shared key | [ADR-0013](../08-DECISIONS/ADR-0013-GROQ-OVER-GEMINI.md) (originally Gemini, [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md)) |
 | Key protection | Held server-side in a Vercel Node Function, never in the browser | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
 | Storage | Local-first, IndexedDB, unchanged | [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) (originally "no accounts in v1," since superseded by [ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)'s mandatory sign-in) |
 | Hosting | Vercel | [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) (originally Cloudflare Pages, [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md)) |
@@ -48,9 +48,9 @@ These are definitional, not preferences.
 
 ### The two that mattered most
 
-**One shared key, but behind a proxy.** The zero-setup requirement demanded a shared key. But a key shipped to a browser is a published secret — it gets scraped and drained within days, and the consequence lands on the owner's account. So the key lives in a Vercel Node Function, guarded by per-IP and global quotas, with bring-your-own-key as the escape hatch when the shared pool runs dry.
+**One shared key, but behind a proxy.** The zero-setup requirement demanded a shared key. But a key shipped to a browser is a published secret — it gets scraped and drained within days, and the consequence lands on the owner's account. So the key lives in a Vercel Node Function, guarded by per-IP and global quotas. Bring-your-own-key was originally the escape hatch when the shared pool ran dry; it was later removed (ADR-0014).
 
-That escape hatch is what makes the design survive success. A user with their own free key costs the project nothing, so **the product scales to any number of users at $0.**
+**Superseded.** That escape hatch was removed in ADR-0014, so the "scales to any number of users at $0" claim no longer holds: the shared quota is now a hard ceiling.
 
 **Local-first, not Supabase.** Supabase's free tier looks generous, but it pauses a project after seven days without a database request. Study traffic is seasonal — heavy for an exam week, silent for a month — so that pause would trigger exactly when a student returns. Storing everything in the browser sidesteps it entirely, removes the signup wall, and makes the privacy claim literally true.
 
@@ -70,12 +70,12 @@ Browser (does almost everything)
         │  only extracted text crosses this line — never files
         ▼
 Vercel Node Function  /api/generate
-├── holds GEMINI_API_KEY as an environment variable
+├── holds GROQ_API_KEY as an environment variable
 ├── origin check, kill switch, per-IP and global quotas
 ├── assembles prompts + strict JSON response schemas
 └── validates grounding; drops uncited items before returning
         ▼
-Google Gemini 2.5 Flash (free tier)
+Groq gpt-oss-120b (free tier)
 ```
 
 **Four browser layers**, with dependencies pointing one way: UI depends on domain, domain depends on nothing. Parsing, persistence, and the AI client each own one external concern. Enforced by lint rules, not just documentation.
@@ -143,7 +143,7 @@ Full accounting with named limits in [ZERO-COST-INFRASTRUCTURE.md](../04-OPERATI
 
 A designed state, not a failure.
 
-The app says what happened, states the reset time in the user's local time, confirms everything already made still works offline, and offers a three-step guide to getting a personal free key.
+The app says what happened, states the reset time in the user's local time, and confirms everything already made still works offline. No alternative is offered — bring-your-own-key was removed ([ADR-0014](../08-DECISIONS/ADR-0014-REMOVE-BRING-YOUR-OWN-KEY.md)).
 
 It never says "upgrade". It never mentions payment. The word "premium" does not exist in this product.
 
@@ -200,7 +200,7 @@ Task-level detail in [BUILD-ORDER.md](../06-PLANNING/BUILD-ORDER.md), exit crite
 | The shared key leaks | Never in the bundle, structurally; pre-commit and CI scanning; one-command kill switch |
 | A user loses local data | Export as a first-class feature, prompted after significant work; persistent-storage request |
 | A bad migration | Additive only, tested with realistic data, idempotent |
-| Quota too small | Bring-your-own-key makes the product scale at $0 |
+| Quota too small | Raise the ceiling toward the provider limit; no bring-your-own-key fallback remains (ADR-0014) |
 | A free tier disappears | Provider behind one module; losing it degrades rather than kills the product |
 | Scope creep | An explicit non-goals document, a five-question scope guard, and a v1.0 with no new features |
 
@@ -222,7 +222,7 @@ Any change must answer yes to all five.
 
 ## Where the numbers are deliberately absent
 
-Public sources disagree on Gemini's free-tier daily request limit, citing 250 to 1,500 depending on model and date, and provider limits change without notice.
+Provider free-tier limits change without notice. Groq measured 1,000 requests/day and 8,000 tokens/minute at the time of the swap.
 
 So no figure is hardcoded anywhere. The global ceiling is a configuration value, set from Google's official rate-limit page before launch, deliberately below the real limit, and reviewed quarterly.
 
