@@ -35,13 +35,17 @@ Two things surfaced that were not on the original list. `pushBackupToCloud` did 
 - `firebase deploy --only firestore:rules` succeeded against `scholarforge-ai-2fbd9`.
 
 **Status**
-Code complete and deployed rules. The signed-in path is unverified end to end.
+Done. Rules deployed, Vercel environment variables set, two-device sync confirmed working by the owner.
+
+Follow-up after the two-device check: `navigator.storage.persist()` was firing on every Settings visit. Chrome decides silently but Firefox prompts, so repeat visits would have re-prompted. Now gated behind a new device-local `hasRequestedPersistence` flag, deliberately excluded from the synced field list.
+
+Privacy documentation was corrected in the same pass. [SECURITY-AND-PRIVACY.md](04-OPERATIONS/SECURITY-AND-PRIVACY.md) claimed nothing reaches Firestore without an explicit "Sync now"; preferences now sync automatically for every signed-in user, and since sign-in is mandatory that means everyone. The doc now states this in the short version, the never-collected table (`streakLastDay` is the one behavioural signal), the data-location table, and the threat table. `CLAUDE.md`'s "never crosses the network" claim carries the same correction.
 
 **Next action**
-Two-device check with a real Google account: change the theme on one device, confirm it reaches the other without a reload. If it stalls silently, the cause is the Firestore Listen channel under the CSP and the fix is `experimentalAutoDetectLongPolling: true` in `src/lib/firestore.ts`.
+Nothing outstanding on this work. The pre-existing `AI-INTEGRATION.md` wire-protocol drift (documented `task`/`X-User-Key` shape versus `api/generate.ts`'s real `kind`/`apiKey` shape) is still open and untouched.
 
 **Blockers**
-`VITE_MOCK_AI` and `ALLOWED_ORIGIN` still need setting in the Vercel dashboard. `VITE_` variables are baked in at build time, so the deployed bundle ignores the local `.env` — and `api/_lib/security.ts` skips the origin check entirely when `ALLOWED_ORIGIN` is unset.
+None.
 
 ---
 

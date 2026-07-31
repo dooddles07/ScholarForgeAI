@@ -5,7 +5,7 @@ Last updated: 2026-07-31
 
 ## The short version
 
-We hold almost nothing, so there is almost nothing to lose. A Google account is required to use the app, but we keep no user database of our own, no uploaded files, no analytics — unless you opt into cloud sync, which is off by default even for a signed-in user. The only secret in the system is one API key, and it lives server-side.
+We hold almost nothing, so there is almost nothing to lose. A Google account is required to use the app, but we keep no user database of our own, no uploaded files, no analytics. Study data stays on the device unless you opt into cloud sync, which is off by default even for a signed-in user; display preferences and your study streak do sync automatically, and nothing else does. The only secret in the system is one API key, and it lives server-side.
 
 That is a security posture achieved by architecture rather than by policy.
 
@@ -18,13 +18,13 @@ That is a security posture achieved by architecture rather than by policy.
 | Uploaded files, in any form |
 | Document contents, beyond the moment of a single request |
 | Quiz results, review history, or progress data, unless you opt into cloud sync |
-| Analytics, page views, session recordings, or behavioural data |
+| Analytics, page views, session recordings, or behavioural data — with one narrow exception: `streakLastDay` in the automatically synced preferences records which day you last studied |
 | Device fingerprints |
 | Cookies of any kind |
 
 No cookie consent banner appears because we set no cookies. That is worth stating plainly, since its absence is usually taken as an oversight.
 
-If you opt into cloud sync, see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) and the "Cloud sync (opt-in)" row below for exactly what that adds.
+If you opt into cloud sync, see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) and the "Cloud sync of study data" note below for exactly what that adds. For what syncs automatically without opting in, see "Preferences sync" in the same section and [ADR-0015](../08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md).
 
 ## What briefly transits our server
 
@@ -46,10 +46,17 @@ It is used to fulfil the request and then discarded. It is never written to stor
 | Aggregate request counters | Upstash Redis | Us, as integers with no identifier |
 | The project API key | Vercel environment variables | Us only |
 | Cloud sync backup (opt-in only) | Firebase Firestore, one document per user at `backups/{uid}` | The signed-in user only, enforced by Firestore security rules |
+| Display preferences and study streak (automatic) | Firebase Firestore, one document per user at `userSettings/{uid}` | The signed-in user only, enforced by Firestore security rules |
 
 Everything in the first four rows is local to the device. See [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md).
 
-**Cloud sync (opt-in).** If, and only if, a user signs in with Google under Settings → "Sync across devices," their `backups/{uid}` Firestore document holds the same data as the first three rows above (documents, decks, cards, quizzes, attempts, exams, conversations, review log) plus their Google account email address, which Firebase Auth uses as the account identifier. Nothing is synced to Firestore unless the user explicitly signs in and taps "Sync now." See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md).
+**Cloud sync of study data (opt-in).** If, and only if, a user signs in with Google under Settings → "Sync across devices," their `backups/{uid}` Firestore document holds the same data as the first three rows above (documents, decks, cards, quizzes, attempts, exams, conversations, review log) plus their Google account email address, which Firebase Auth uses as the account identifier. No study data is written to Firestore unless the user explicitly taps "Sync now." See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md).
+
+**Preferences sync (automatic, not opt-in).** Since [ADR-0015](../08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md), a smaller `userSettings/{uid}` document syncs continuously for every signed-in user, without a button and without asking. Sign-in is mandatory ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)), so in practice this applies to everyone who uses the app.
+
+What it contains is deliberately narrow: theme, reading mode, reduce motion, cards-per-day, focus timer, and the three streak fields (count, last day, grace used). It carries **no study content** — no documents, no cards, no answers, no results. The one field with any behavioural signal is `streakLastDay`, a date string indicating which days the user studied.
+
+This is a real reduction in the "nothing leaves your device by default" position the project started from, and it is stated here rather than buried because that position is what the rest of this document is built on.
 
 ## The one secret
 
@@ -85,8 +92,8 @@ The reason for the strictness: a key that reaches a browser is published, and a 
 | A malicious document causes code execution | Parsing libraries are sandboxed in a Web Worker; extracted text is treated as data and never evaluated |
 | Prompt injection via document contents | Document text is clearly delimited in the prompt; the system instruction takes priority; output is schema-validated and grounding-checked |
 | XSS via generated content | React escapes by default; no `dangerouslySetInnerHTML` on model output; a strict Content Security Policy |
-| Someone reads another user's data | There is no shared storage for anyone who doesn't opt into cloud sync — data never leaves the device. For a signed-in user, Firestore security rules restrict `backups/{uid}` to that user's own authenticated UID; no app-code bug can expose it to another user. |
-| A data breach exposing user information | We hold no user information, unless a user opted into cloud sync, in which case their study data and Google email live in their own Firestore document, protected by Firebase's security and Firestore's per-user access rules rather than by us holding nothing |
+| Someone reads another user's data | Study data stays on the device unless the user opts into cloud sync. Firestore security rules restrict both `backups/{uid}` and `userSettings/{uid}` to that user's own authenticated UID; no app-code bug can expose either to another user. `userSettings/{uid}` additionally rejects any document with unexpected keys or an out-of-range `dailyCardLimit`, so a compromised client cannot write arbitrary data into a user's own path. |
+| A data breach exposing user information | Every signed-in user has a `userSettings/{uid}` document holding display preferences and a study streak — no study content. A user who opted into cloud sync additionally has their study data and Google email in `backups/{uid}`. Both are protected by Firebase's security and Firestore's per-user access rules rather than by us holding nothing. |
 
 ### Prompt injection, specifically
 

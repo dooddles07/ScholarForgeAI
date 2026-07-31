@@ -43,7 +43,7 @@ No Playwright script in `package.json` yet; `tests/e2e/axe-audit.mjs` is run dir
 
 ### Auth (recent addition, not yet reflected in most of `docs/03-ARCHITECTURE/`)
 
-All `/app/*` routes are gated behind Firebase Google sign-in via `AuthGate` (`src/ui/components/AuthGate.tsx`) wrapped around `AppLayout`. This is a **UI gate, not a data-layer security boundary** — the real protection is `firestore.rules` (`backups/{uid}` restricted to its owner). IndexedDB via Dexie is still the only place study data is written by default; Firestore is touched only when a signed-in user taps "Sync now" (manual push/pull, `useCloudSync`, built on `useAuthUser`). See [ADR-0011](docs/08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) and [ADR-0010](docs/08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md).
+All `/app/*` routes are gated behind Firebase Google sign-in via `AuthGate` (`src/ui/components/AuthGate.tsx`) wrapped around `AppLayout`. This is a **UI gate, not a data-layer security boundary** — the real protection is `firestore.rules` (`backups/{uid}` restricted to its owner). IndexedDB via Dexie is still the only place study data is written by default; `backups/{uid}` is touched only when a signed-in user taps "Sync now" (manual push/pull, `useCloudSync`, built on `useAuthUser`). Preferences are the exception — `userSettings/{uid}` syncs live for every signed-in user via `useSettingsSync`, mounted in `AppLayout`. See [ADR-0011](docs/08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md), [ADR-0010](docs/08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md), and [ADR-0015](docs/08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md).
 
 ### Hosting reality vs. docs
 
@@ -54,6 +54,8 @@ The project is deployed on **Vercel** (`api/`, `@vercel/node`, `vercel.json`, Up
 Domain layer picks a retrieval tier (whole document if it fits context, else BM25-selected chunks) → `ai/client.ts` POSTs `{ chunkId, text }` chunks to `/api/generate` (no file, no key) → function checks origin, quota, kill switch → assembles prompt + JSON schema → calls Gemini → **drops any item whose citation doesn't map back to a chunk it actually sent** → client shuffles answer positions (models have positional bias) → persisted via Dexie.
 
 **Never crosses the network:** the original file, stored decks, quiz results, review schedules, progress history, any user identifier beyond what Firebase auth itself requires for sign-in.
+
+**One exception, since [ADR-0015](docs/08-DECISIONS/ADR-0015-LIVE-SETTINGS-SYNC.md):** display preferences and the study streak sync automatically to `userSettings/{uid}` for every signed-in user, live via `onSnapshot` and without a button. No study content travels with them. Study data still moves only on a manual "Sync now."
 
 ## Conventions
 
