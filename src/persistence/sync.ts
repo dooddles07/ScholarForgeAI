@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { firestore } from '@/lib/firebase';
+import { firestore } from '@/lib/firestore';
 import { isBackupPayload, type BackupPayload } from '@/domain/export/backup';
 
 function backupDocRef(uid: string) {

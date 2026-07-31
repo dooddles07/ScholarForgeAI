@@ -68,6 +68,26 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        /* Name the Firebase chunks deterministically. Rollup otherwise emits them as
+           index.esm-*.js and sync-*.js, which the service worker's `firebase-*` precache
+           exclusion silently stops matching — that would ship 740 KB of Firebase to every
+           visitor. Auth and Firestore stay in separate chunks on purpose: sign-in is mandatory,
+           cloud sync is not, so only sync-users should pay for Firestore. */
+        manualChunks(id: string) {
+          if (id.includes('@firebase/firestore') || id.includes('firebase/firestore')) {
+            return 'firebase-firestore';
+          }
+          if (id.includes('@firebase') || id.includes('node_modules/firebase/')) {
+            return 'firebase-auth';
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test-setup.ts'],

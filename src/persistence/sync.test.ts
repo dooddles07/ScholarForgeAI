@@ -11,7 +11,7 @@ vi.mock('firebase/firestore', () => ({
   setDoc: mockSetDoc,
 }));
 
-vi.mock('@/lib/firebase', () => ({
+vi.mock('@/lib/firestore', () => ({
   firestore: () => 'fake-firestore',
 }));
 
