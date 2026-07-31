@@ -16,6 +16,7 @@ const local: Settings = {
   dailyCardLimit: 20,
   focusTimerEnabled: false,
   hasSeenLocalDataWarning: true,
+  hasRequestedPersistence: true,
   lastExportAt: 111,
   lastSyncedAt: 222,
   streakCount: 3,

@@ -13,10 +13,13 @@ const WARN_PERCENT = 80;
 const BLOCKED_PERCENT = 95;
 
 export function DataSection() {
-  const { settings } = useSettings();
+  const { settings, update } = useSettings();
   const exportBackup = useExportBackup();
   const { status: importStatus, inputRef, trigger: triggerImport, handleFile } = useImportBackup();
-  const estimate = useStorageEstimate();
+  const estimate = useStorageEstimate(
+    !settings.hasRequestedPersistence,
+    () => void update({ hasRequestedPersistence: true }),
+  );
 
   return (
     <Group title={copy.yourData}>

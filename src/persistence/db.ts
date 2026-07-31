@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyCardLimit: 20,
   focusTimerEnabled: false,
   hasSeenLocalDataWarning: false,
+  hasRequestedPersistence: false,
   lastExportAt: null,
   lastSyncedAt: null,
   streakCount: 0,

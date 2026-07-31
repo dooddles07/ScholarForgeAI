@@ -197,6 +197,8 @@ export interface Settings {
   dailyCardLimit: number;
   focusTimerEnabled: boolean;
   hasSeenLocalDataWarning: boolean;
+  /* Device-local: Firefox prompts on a persistent-storage request, so it is only ever asked once. */
+  hasRequestedPersistence: boolean;
   lastExportAt: number | null;
   lastSyncedAt: number | null;
   streakCount: number;

@@ -6,38 +6,47 @@ export interface StorageEstimate {
   isPersisted: boolean;
 }
 
-/* Asking for persistent storage stops the browser treating the study database as evictable
-   cache. Chrome grants it silently for an installed or frequently used site; Safari private
-   windows refuse outright, which is why nothing here throws. */
-async function readEstimate(): Promise<StorageEstimate | null> {
+/* Persistent storage stops the browser treating the study database as evictable cache. Chrome
+   decides silently, but Firefox shows a permission prompt, so the request is made once per
+   device and never again — hence the caller-supplied gate rather than a check on every mount. */
+async function readEstimate(mayRequest: boolean): Promise<StorageEstimate | null> {
   if (!navigator.storage?.estimate) return null;
   try {
-    const isPersisted = (await navigator.storage.persisted?.()) ?? false;
-    const granted = isPersisted || ((await navigator.storage.persist?.()) ?? false);
+    let isPersisted = (await navigator.storage.persisted?.()) ?? false;
+    if (!isPersisted && mayRequest) {
+      isPersisted = (await navigator.storage.persist?.()) ?? false;
+    }
     const { usage = 0, quota = 0 } = await navigator.storage.estimate();
     if (quota === 0) return null;
     return {
       usedBytes: usage,
       percentUsed: Math.min(100, Math.round((usage / quota) * 100)),
-      isPersisted: granted,
+      isPersisted,
     };
   } catch {
     return null;
   }
 }
 
-export function useStorageEstimate(): StorageEstimate | null | undefined {
+/* undefined while reading, null when the browser will not say (Safari private windows). */
+export function useStorageEstimate(
+  mayRequestPersistence: boolean,
+  onRequested: () => void,
+): StorageEstimate | null | undefined {
   const [estimate, setEstimate] = useState<StorageEstimate | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
-    void readEstimate().then((result) => {
-      if (!cancelled) setEstimate(result);
+    void readEstimate(mayRequestPersistence).then((result) => {
+      if (cancelled) return;
+      setEstimate(result);
+      if (mayRequestPersistence) onRequested();
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- asked once per mount, not per callback identity
+  }, [mayRequestPersistence]);
 
   return estimate;
 }
