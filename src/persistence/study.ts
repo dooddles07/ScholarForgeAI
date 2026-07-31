@@ -68,4 +68,7 @@ export function getExamForDocument(documentId: string): Promise<Exam | undefined
 
 export async function deleteEverything(): Promise<void> {
   await Promise.all(db.tables.map((table) => table.clear()));
+  /* The pre-paint theme mirror lives outside Dexie, so a wipe would otherwise reopen the browser
+     in the deleted account's theme. */
+  localStorage.removeItem('sf-theme');
 }

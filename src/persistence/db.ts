@@ -44,16 +44,16 @@ db.version(1).stores({
 
 export const DEFAULT_SETTINGS: Settings = {
   id: 'singleton',
-  theme: 'dark',
+  theme: 'system',
   readingMode: false,
   reduceMotion: 'system',
   dailyCardLimit: 20,
   focusTimerEnabled: false,
-  hasSeenInstallPrompt: false,
   hasSeenLocalDataWarning: false,
   lastExportAt: null,
   lastSyncedAt: null,
   streakCount: 0,
   streakLastDay: '',
   streakGraceUsed: false,
+  updatedAt: 0,
 };

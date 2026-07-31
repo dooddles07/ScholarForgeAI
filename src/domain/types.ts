@@ -196,11 +196,12 @@ export interface Settings {
   reduceMotion: 'system' | 'always';
   dailyCardLimit: number;
   focusTimerEnabled: boolean;
-  hasSeenInstallPrompt: boolean;
   hasSeenLocalDataWarning: boolean;
   lastExportAt: number | null;
   lastSyncedAt: number | null;
   streakCount: number;
   streakLastDay: string;
   streakGraceUsed: boolean;
+  /* Last local write, used to settle conflicts against a remote copy. */
+  updatedAt: number;
 }

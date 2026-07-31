@@ -1,25 +1,39 @@
 import { db } from './db';
+import { getSettings, replaceSettings } from './settings';
+import { mergeSettings, pickSynced } from '@/domain/settings/synced';
 import { BACKUP_VERSION, type BackupPayload } from '@/domain/export/backup';
 
-/* Settings (including the user's own API key) are deliberately left out: a backup file is meant
-   to be moved between devices or shared, and a key should never travel inside one. */
+/* Preferences travel with the data. Only the synced subset goes: lastSyncedAt and the
+   seen-this-warning flags describe the browser that made the file, not the person. */
 export async function exportBackup(): Promise<BackupPayload> {
-  const [documents, studySets, decks, cards, quizzes, attempts, exams, conversations, reviewLog] =
-    await Promise.all([
-      db.documents.toArray(),
-      db.studySets.toArray(),
-      db.decks.toArray(),
-      db.cards.toArray(),
-      db.quizzes.toArray(),
-      db.attempts.toArray(),
-      db.exams.toArray(),
-      db.conversations.toArray(),
-      db.reviewLog.toArray(),
-    ]);
+  const [
+    settings,
+    documents,
+    studySets,
+    decks,
+    cards,
+    quizzes,
+    attempts,
+    exams,
+    conversations,
+    reviewLog,
+  ] = await Promise.all([
+    getSettings(),
+    db.documents.toArray(),
+    db.studySets.toArray(),
+    db.decks.toArray(),
+    db.cards.toArray(),
+    db.quizzes.toArray(),
+    db.attempts.toArray(),
+    db.exams.toArray(),
+    db.conversations.toArray(),
+    db.reviewLog.toArray(),
+  ]);
 
   return {
     version: BACKUP_VERSION,
     exportedAt: Date.now(),
+    settings: pickSynced(settings),
     documents,
     studySets,
     decks,
@@ -60,4 +74,12 @@ export async function importBackup(payload: BackupPayload): Promise<void> {
       await db.reviewLog.bulkPut(payload.reviewLog);
     },
   );
+
+  /* Outside the transaction: settings have their own conflict rule, and a file older than what
+     this device already has must not undo a newer preference. */
+  if (payload.settings) {
+    const local = await getSettings();
+    const merged = mergeSettings(local, payload.settings);
+    if (merged !== local) await replaceSettings(merged);
+  }
 }

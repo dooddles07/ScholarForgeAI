@@ -1,22 +1,34 @@
 import * as Dialog from '@radix-ui/react-dialog';
 import { useDeleteEverything } from '@/hooks/use-delete-everything';
+import { useSettings } from '@/hooks/use-settings';
 import { Button } from '@/ui/components/primitives/Button';
-import { deleteAll, storage } from '@/copy/labels';
+import { deleteAll, settings as copy, storage } from '@/copy/labels';
 
 export function DangerZone() {
   const deleteEverything = useDeleteEverything();
+  const { settings, update } = useSettings();
 
   return (
     <div className="p-4">
-      <p className="max-w-[62ch] text-sm text-fg-muted">{storage.firstRun}</p>
+      {/* Worth saying once. Repeating it every visit trains people to stop reading warnings. */}
+      {!settings.hasSeenLocalDataWarning && (
+        <div className="mb-5">
+          <p className="max-w-[62ch] text-sm text-fg-muted">{storage.firstRun}</p>
+          <Button
+            variant="ghost"
+            className="mt-2"
+            onClick={() => void update({ hasSeenLocalDataWarning: true })}
+          >
+            {copy.localDataDismiss}
+          </Button>
+        </div>
+      )}
 
       <Dialog.Root>
         {/* Destructive action sits at the end of the group, never bottom-anchored where a thumb
             lands by accident. */}
         <Dialog.Trigger asChild>
-          <Button variant="secondary" className="mt-5">
-            {deleteAll.label}
-          </Button>
+          <Button variant="secondary">{deleteAll.label}</Button>
         </Dialog.Trigger>
 
         <Dialog.Portal>

@@ -1,21 +1,10 @@
-import { useEffect, useState } from 'react';
 import { CloudOff } from 'lucide-react';
+import { useIsOffline } from '@/hooks/use-is-offline';
 import { offline } from '@/copy/labels';
 
 /* Names what still works first. The connection is already gone; listing losses does not help. */
 export function OfflineBanner() {
-  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
-
-  useEffect(() => {
-    const goOffline = () => setIsOffline(true);
-    const goOnline = () => setIsOffline(false);
-    window.addEventListener('offline', goOffline);
-    window.addEventListener('online', goOnline);
-    return () => {
-      window.removeEventListener('offline', goOffline);
-      window.removeEventListener('online', goOnline);
-    };
-  }, []);
+  const isOffline = useIsOffline();
 
   return (
     <div

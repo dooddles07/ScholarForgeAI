@@ -16,9 +16,24 @@ const config = {
 
 let app: FirebaseApp | undefined;
 
+/* Named up front rather than left to Firebase's opaque runtime failure at first sign-in. */
+function assertConfigured(): void {
+  const missing = Object.entries(config)
+    .filter(([, value]) => !value)
+    .map(([key]) => `VITE_FIREBASE_${key.replace(/[A-Z]/g, (c) => `_${c}`).toUpperCase()}`);
+  if (missing.length > 0) {
+    throw new Error(
+      `Firebase is not configured. Missing environment variables: ${missing.join(', ')}`,
+    );
+  }
+}
+
 /* Exported so ./firestore.ts reuses this one instance — calling initializeApp twice throws. */
 export function firebaseApp(): FirebaseApp {
-  if (!app) app = initializeApp(config);
+  if (!app) {
+    assertConfigured();
+    app = initializeApp(config);
+  }
   return app;
 }
 

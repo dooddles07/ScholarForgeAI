@@ -1,8 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Sized so one runaway client cannot fill the free tier. Firestore's own hard limit is 1 MB;
+    // the client refuses at 900 KB and gives the user a reason.
     match /backups/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid) && request.resource.size() < 1000000;
+    }
+
+    // Preferences only. The client clamps dailyCardLimit too, but that check ships in the
+    // browser and anyone can skip it.
+    match /userSettings/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid)
+        && request.resource.data.keys().hasOnly([
+             'theme', 'readingMode', 'reduceMotion', 'dailyCardLimit', 'focusTimerEnabled',
+             'streakCount', 'streakLastDay', 'streakGraceUsed', 'updatedAt'
+           ])
+        && request.resource.data.theme in ['system', 'light', 'dark']
+        && request.resource.data.reduceMotion in ['system', 'always']
+        && request.resource.data.readingMode is bool
+        && request.resource.data.focusTimerEnabled is bool
+        && request.resource.data.streakGraceUsed is bool
+        && request.resource.data.streakLastDay is string
+        && request.resource.data.streakCount is int
+        && request.resource.data.updatedAt is int
+        && request.resource.data.dailyCardLimit is int
+        && request.resource.data.dailyCardLimit >= 5
+        && request.resource.data.dailyCardLimit <= 200;
     }
   }
 }

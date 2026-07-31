@@ -153,6 +153,17 @@
   }
 }
 
+/* The in-app setting only ever adds restraint: 'system' defers to the query above, so a device
+   asking for less motion is never overridden by a preference stored here. */
+[data-motion='reduce'] *,
+[data-motion='reduce'] *::before,
+[data-motion='reduce'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
 /* Card flip: the one animation with a real job. Reduces to a crossfade under reduced motion. */
 .flashcard-scene {
   perspective: 1200px;
@@ -204,6 +215,34 @@
   .flashcard-flip[data-flipped='true'] .flashcard-face-back {
     opacity: 1;
   }
+}
+
+/* Same crossfade for the in-app setting. Duplicated rather than combined into a selector list:
+   a browser that cannot parse the media query would otherwise drop both. */
+[data-motion='reduce'] .flashcard-flip {
+  transform: none !important;
+}
+
+[data-motion='reduce'] .flashcard-face {
+  transition: opacity var(--duration) var(--ease);
+}
+
+[data-motion='reduce'] .flashcard-face-front {
+  opacity: 1;
+}
+
+[data-motion='reduce'] .flashcard-flip[data-flipped='true'] .flashcard-face-front {
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-motion='reduce'] .flashcard-face-back {
+  transform: none;
+  opacity: 0;
+}
+
+[data-motion='reduce'] .flashcard-flip[data-flipped='true'] .flashcard-face-back {
+  opacity: 1;
 }
 
 /* Shared entrance for moments that just changed: feedback reveal, chat turns. */

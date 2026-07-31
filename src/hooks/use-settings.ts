@@ -41,16 +41,21 @@ export function useAppearance() {
     };
 
     apply();
-    if (settings.theme === 'system') {
-      localStorage.removeItem('sf-theme');
-      prefersDark.addEventListener('change', apply);
-      return () => prefersDark.removeEventListener('change', apply);
-    }
+    /* 'system' is stored rather than cleared: an absent key is indistinguishable from a first
+       visit, which is what used to make the pre-paint script guess dark. */
     localStorage.setItem('sf-theme', settings.theme);
-    return undefined;
+    if (settings.theme !== 'system') return undefined;
+    prefersDark.addEventListener('change', apply);
+    return () => prefersDark.removeEventListener('change', apply);
   }, [settings.theme]);
 
   useEffect(() => {
     document.documentElement.dataset.reading = settings.readingMode ? 'on' : 'off';
   }, [settings.readingMode]);
+
+  /* 'system' leaves it to the prefers-reduced-motion media query in globals.css. */
+  useEffect(() => {
+    document.documentElement.dataset.motion =
+      settings.reduceMotion === 'always' ? 'reduce' : 'system';
+  }, [settings.reduceMotion]);
 }

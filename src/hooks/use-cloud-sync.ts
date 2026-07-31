@@ -11,6 +11,8 @@ export type CloudSyncStatus =
   | 'backupFound'
   | 'signedIn'
   | 'syncing'
+  | 'offline'
+  | 'tooLarge'
   | 'error';
 
 export function useCloudSync() {
@@ -94,11 +96,25 @@ export function useCloudSync() {
   const syncNow = useCallback(async () => {
     const uid = uidRef.current;
     if (!uid) return;
+    /* Checked here as well as on the button: the flag can go stale between render and click,
+       and "you are offline" is a different problem from "sync failed". */
+    if (!navigator.onLine) {
+      setStatus('offline');
+      return;
+    }
     setStatus('syncing');
     try {
-      const { pushBackupToCloud } = await import('@/persistence/sync');
+      const { pushBackupToCloud, BackupTooLargeError } = await import('@/persistence/sync');
       const payload = await exportBackup();
-      await pushBackupToCloud(uid, payload);
+      try {
+        await pushBackupToCloud(uid, payload);
+      } catch (error) {
+        if (error instanceof BackupTooLargeError) {
+          setStatus('tooLarge');
+          return;
+        }
+        throw error;
+      }
       await updateSettings({ lastSyncedAt: Date.now() });
       setStatus('signedIn');
     } catch {

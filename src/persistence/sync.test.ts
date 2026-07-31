@@ -15,7 +15,7 @@ vi.mock('@/lib/firestore', () => ({
   firestore: () => 'fake-firestore',
 }));
 
-const { pullBackupFromCloud, pushBackupToCloud } = await import('./sync');
+const { BackupTooLargeError, pullBackupFromCloud, pushBackupToCloud } = await import('./sync');
 
 const payload: BackupPayload = {
   version: 1,
@@ -42,6 +42,17 @@ describe('pushBackupToCloud', () => {
     await pushBackupToCloud('user-1', payload);
     expect(mockDoc).toHaveBeenCalledWith('fake-firestore', 'backups', 'user-1');
     expect(mockSetDoc).toHaveBeenCalledWith('doc-ref', payload);
+  });
+
+  it('refuses a payload past the per-document limit rather than letting Firestore reject it', async () => {
+    const huge: BackupPayload = {
+      ...payload,
+      conversations: [
+        { padding: 'x'.repeat(1_000_000) },
+      ] as unknown as BackupPayload['conversations'],
+    };
+    await expect(pushBackupToCloud('user-1', huge)).rejects.toBeInstanceOf(BackupTooLargeError);
+    expect(mockSetDoc).not.toHaveBeenCalled();
   });
 });
 

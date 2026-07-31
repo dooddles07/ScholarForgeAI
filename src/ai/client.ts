@@ -15,16 +15,18 @@ import { MOCK_DOC_ID } from './mock/document';
 import { generateCardsFromChunks, generateQuestionsFromChunks } from './mock/generate';
 
 /*
- * The single seam between the app and generation. In dev it serves fixtures, so a contributor
- * never needs credentials. In a real build it calls the Vercel proxy at /api/generate. No
- * component above this file knows the difference.
+ * The single seam between the app and generation. Set VITE_MOCK_AI=true to serve fixtures, so a
+ * contributor never needs credentials; otherwise it calls the proxy at /api/generate, dev
+ * included. No component above this file knows the difference.
  */
 
 export interface GenerateOptions {
   signal?: AbortSignal;
 }
 
-export const IS_MOCK_MODE = import.meta.env.DEV;
+/* Opt-in rather than tied to import.meta.env.DEV: a dev server that can never reach the real
+   pipeline hides integration breakage until deploy. */
+export const IS_MOCK_MODE = import.meta.env.VITE_MOCK_AI === 'true';
 
 /* Mirrors MAX_CHARS in api/generate.ts, which is set by the provider's per-minute token cap.
    Selecting here rather than server-side keeps the document itself on the device: only the

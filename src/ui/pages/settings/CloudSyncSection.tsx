@@ -1,28 +1,10 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useCloudSync } from '@/hooks/use-cloud-sync';
+import { useIsOffline } from '@/hooks/use-is-offline';
 import { useSettings } from '@/hooks/use-settings';
 import { relativeTime } from '@/lib/format';
 import { Button } from '@/ui/components/primitives/Button';
 import { settings as copy, offline as offlineCopy } from '@/copy/labels';
-
-/* Same navigator.onLine + online/offline event pattern as OfflineBanner.tsx. */
-function useIsOffline() {
-  const [isOffline, setIsOffline] = useState(() => !navigator.onLine);
-
-  useEffect(() => {
-    const goOffline = () => setIsOffline(true);
-    const goOnline = () => setIsOffline(false);
-    window.addEventListener('offline', goOffline);
-    window.addEventListener('online', goOnline);
-    return () => {
-      window.removeEventListener('offline', goOffline);
-      window.removeEventListener('online', goOnline);
-    };
-  }, []);
-
-  return isOffline;
-}
 
 export function CloudSyncSection() {
   const { status, email, signIn, signOut, restoreFoundBackup, dismissFoundBackup, syncNow } =
@@ -80,11 +62,20 @@ export function CloudSyncSection() {
     );
   }
 
-  if (status === 'error') {
+  if (status === 'error' || status === 'offline' || status === 'tooLarge') {
+    const message =
+      status === 'offline'
+        ? copy.syncOffline
+        : status === 'tooLarge'
+          ? copy.syncTooLarge
+          : copy.syncError;
     return (
       <div className="p-4">
-        <p role="alert" className="text-sm text-incorrect">
-          {copy.syncError}
+        <p
+          role="alert"
+          className={status === 'error' ? 'text-sm text-incorrect' : 'text-sm text-fg'}
+        >
+          {message}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => void syncNow()}>
