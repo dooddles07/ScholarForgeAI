@@ -1,11 +1,11 @@
 # Security and Privacy
 
 Purpose: what we protect, what we never collect, and the threat model.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## The short version
 
-We hold almost nothing, so there is almost nothing to lose. No accounts, no user database, no uploaded files, no analytics — unless you opt into cloud sync, which is off by default. The only secret in the system is one API key, and it lives server-side.
+We hold almost nothing, so there is almost nothing to lose. A Google account is required to use the app, but we keep no user database of our own, no uploaded files, no analytics — unless you opt into cloud sync, which is off by default even for a signed-in user. The only secret in the system is one API key, and it lives server-side.
 
 That is a security posture achieved by architecture rather than by policy.
 
@@ -14,7 +14,7 @@ That is a security posture achieved by architecture rather than by policy.
 | Never collected |
 |---|
 | Names, email addresses, or any identity information, unless you opt into cloud sync |
-| Passwords, because there are no accounts (Google handles authentication for cloud sync; we never see or store a password) |
+| Passwords — Google handles authentication for both sign-in and cloud sync; we never see or store a password |
 | Uploaded files, in any form |
 | Document contents, beyond the moment of a single request |
 | Quiz results, review history, or progress data, unless you opt into cloud sync |
@@ -196,7 +196,7 @@ The privacy position is only useful if users know about it, so it is stated wher
 | Location | Statement |
 |---|---|
 | Under the drop zone | "Your file stays on your device. We never upload it." |
-| First run | Data is local to this browser; there is no account; export is how you back it up |
+| First run | Data is local to this browser unless synced; export is how you back it up |
 | Before a generation | What text is sent, if the user asks |
 | Key settings | The key stays in this browser and is never sent to our servers |
 | Private browsing | Nothing will be saved after this window closes |

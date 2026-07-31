@@ -1,6 +1,6 @@
 # ADR-0001 — Local-first storage, no accounts in v1
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0011](ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) (the "no accounts" part only — local-first storage itself is unchanged)
 **Date:** 2026-07-30
 
 ## Context

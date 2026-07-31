@@ -9,7 +9,7 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 
 | ADR | Decision | Status | Date |
 |---|---|---|---|
-| [ADR-0001](ADR-0001-LOCAL-FIRST-STORAGE.md) | Store everything in the browser; no accounts in v1 | Accepted | 2026-07-30 |
+| [ADR-0001](ADR-0001-LOCAL-FIRST-STORAGE.md) | Store everything in the browser; no accounts in v1 | Superseded by ADR-0011 | 2026-07-30 |
 | [ADR-0002](ADR-0002-SHARED-KEY-BEHIND-PROXY.md) | One shared AI key, held server-side behind a proxy | Accepted | 2026-07-30 |
 | [ADR-0003](ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md) | Host on Cloudflare Pages rather than Vercel | Superseded by ADR-0009 | 2026-07-30 |
 | [ADR-0004](ADR-0004-VITE-SPA-OVER-NEXTJS.md) | Build a Vite React SPA rather than a Next.js app | Accepted | 2026-07-30 |
@@ -19,6 +19,7 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 | [ADR-0008](ADR-0008-TWO-VISUAL-REGISTERS.md) | Expressive marketing page, calm app, one codebase | Accepted | 2026-07-30 |
 | [ADR-0009](ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) | Host on Vercel rather than Cloudflare Pages | Accepted | 2026-07-30 |
 | [ADR-0010](ADR-0010-OPTIONAL-CLOUD-SYNC.md) | Optional cloud sync via Firebase, additive to local-first | Accepted | 2026-07-31 |
+| [ADR-0011](ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) | Mandatory Google sign-in for app access | Accepted | 2026-07-31 |
 
 ## Format
 

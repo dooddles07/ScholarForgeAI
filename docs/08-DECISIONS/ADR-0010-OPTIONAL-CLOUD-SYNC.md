@@ -19,7 +19,7 @@ Chosen over Supabase specifically because Supabase's free tier pauses a project 
 
 **No conflict-resolution engine to build.** Manual push/pull sidesteps the entire class of problems real-time bidirectional sync creates (conflicting edits on two devices, merge strategies, CRDTs). Whichever direction the user chose is simply what happens.
 
-**Stays true to the local-first promise for everyone who doesn't opt in.** Signing in is discoverable in Settings, never required. Signing out never touches local data — only the auth session.
+**Stays true to the local-first promise regardless of sign-in.** Signing out never touches local data — only the auth session. (Sign-in itself later became mandatory app-wide, see [ADR-0011](ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) — but the sync action described here, pushing/pulling a Firestore backup, remains a separate, manual, opt-in step even for a signed-in user.)
 
 **Zero cost, long-term.** Firebase Spark plan, no credit card, no inactivity pause.
 
