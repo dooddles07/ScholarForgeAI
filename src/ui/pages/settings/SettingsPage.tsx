@@ -6,6 +6,7 @@ import { PageHeader } from '@/ui/components/PageHeader';
 import { Button } from '@/ui/components/primitives/Button';
 import { nav, settings as copy } from '@/copy/labels';
 import { ApiKeyField } from './ApiKeyField';
+import { CloudSyncSection } from './CloudSyncSection';
 import { DangerZone } from './DangerZone';
 
 export default function SettingsPage() {
@@ -63,6 +64,10 @@ export default function SettingsPage() {
               value={settings.userApiKey}
               onSave={(userApiKey) => void update({ userApiKey })}
             />
+          </Group>
+
+          <Group title={copy.syncHeading}>
+            <CloudSyncSection />
           </Group>
 
           <Group title={copy.yourData}>
