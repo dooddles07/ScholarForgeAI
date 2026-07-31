@@ -45,8 +45,12 @@ A follow-up sweep closed the last known documentation drift. The `task`/`X-User-
 
 The sweep also caught a genuine self-hosting blocker: [SELF-HOSTING-GUIDE.md](07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md) presented Firebase as "optional — the app works fully without it," which stopped being true at [ADR-0011](08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md). A forker following that guide would have deployed an app nobody could sign into. Rewritten as required, with a note that publishing `firestore.rules` is equally non-optional now that `userSettings/{uid}` exists, and a `VITE_MOCK_AI` row added.
 
+A test pass followed. `persistence/settings.ts`, `persistence/settings-sync.ts`, and the backup round-trip had no coverage; they now do (20 tests). Writing them found a real bug: `mergeSettings` spread the remote object wholesale, so a backup file carrying keys outside the synced set could overwrite device-local fields such as `lastSyncedAt`. Firestore's rules block that on the sync path via `hasOnly`, but an imported file is user-supplied and had no equivalent guard. Now copied key by key.
+
+Then the server side, which had **no tests at all** — including the grounding filter, the property [CLAUDE.md](../CLAUDE.md) describes as the core safety guarantee. The filter was inline in the request handler and untestable without one, so it moved to `api/_lib/grounding.ts` as pure functions (`groundedCitation`, `groundItems`, `groundChat`) and `api/generate.ts` now calls them. 18 tests cover it and `api/_lib/security.ts`: ungrounded items dropped, page numbers always taken from our own chunk data rather than a model claim, chat content discarded when no citation survives, the origin check's unset-means-open behaviour, and IP hashing being stable, salted, and irreversible.
+
 **Next action**
-Nothing outstanding.
+Nothing outstanding. Remaining known gap, unchanged and pre-existing: `src/ai/mock/` has no fixtures for a malformed response, quota exhaustion, or an ungrounded item, so those error paths cannot be exercised in mock mode.
 
 **Blockers**
 None.

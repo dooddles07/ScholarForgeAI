@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isAllowedOrigin, clientIp, hashIp } from './_lib/security.js';
 import { checkAndConsumeQuota } from './_lib/quota.js';
+import { groundChat, groundItems } from './_lib/grounding.js';
 import {
   callGroq,
   ProviderError,
@@ -24,15 +25,6 @@ const MAX_CHARS = 24_000;
 
 function totalChars(chunks: GroundedChunk[]): number {
   return chunks.reduce((sum, c) => sum + c.text.length, 0);
-}
-
-/* The model is trusted to write good prose, never to invent a source: every returned item is
-   dropped unless its chunkId matches one we actually sent, and the page numbers in the final
-   citation always come from our own chunk data, never a model-claimed page. */
-function groundedCitation(chunkId: string, quote: string, chunks: GroundedChunk[]) {
-  const chunk = chunks.find((c) => c.id === chunkId);
-  if (!chunk) return null;
-  return { chunkId: chunk.id, pageStart: chunk.pageStart, pageEnd: chunk.pageEnd, quote };
 }
 
 function header(value: string | string[] | undefined): string | undefined {
@@ -77,21 +69,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     const result = await callGroq(body, apiKey);
 
     if (body.kind === 'chat') {
-      const chat = result as RawChatResult;
-      const citations = chat.citations
-        .map((c) => groundedCitation(c.chunkId, c.quote, body.chunks))
-        .filter((c): c is NonNullable<typeof c> => c !== null);
-      res.status(200).json({ content: citations.length > 0 ? chat.content : '', citations });
+      res.status(200).json(groundChat(result as RawChatResult, body.chunks));
       return;
     }
 
-    const items = (result as RawQuestionItem[] | RawCardItem[]).flatMap((item) => {
-      const { chunkId, quote, ...rest } = item;
-      const citation = groundedCitation(chunkId, quote, body.chunks);
-      return citation ? [{ ...rest, citation }] : [];
+    res.status(200).json({
+      items: groundItems(result as RawQuestionItem[] | RawCardItem[], body.chunks),
     });
-
-    res.status(200).json({ items });
   } catch (error) {
     const status = error instanceof ProviderError ? error.status : 502;
     res.status(status >= 500 ? 502 : status).json({ error: 'PROVIDER_ERROR' });
