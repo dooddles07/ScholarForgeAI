@@ -65,7 +65,7 @@ That is the whole reason the escape hatch exists. See [ADR-0002](../08-DECISIONS
 | File storage | Files parsed in the browser, never uploaded | All storage cost |
 | Upload bandwidth | Files never transit the network | All ingress cost |
 | Database | IndexedDB on the device | All database cost |
-| Authentication service | No accounts | All auth cost |
+| Authentication service | Firebase Auth's free tier, not a custom-built one | Building and hosting our own auth backend |
 | Vector database | No embeddings at all | Storage and API cost |
 | Embedding API calls | BM25 keyword retrieval in the browser | Thousands of calls per large upload |
 | PDF generation library | Browser print-to-PDF | Bundle weight and any service cost |

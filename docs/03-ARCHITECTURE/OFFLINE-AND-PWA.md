@@ -1,7 +1,7 @@
 # Offline and PWA
 
 Purpose: how the app installs, caches, and works without a connection.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Decision context in [ADR-0007](../08-DECISIONS/ADR-0007-PWA-OVER-NATIVE.md).
 
@@ -116,7 +116,7 @@ Mitigations:
 
 **Detect private browsing.** Storage is ephemeral there. Detected on first run and stated plainly: nothing will be saved after the window closes. We do not block usage, since some people genuinely want a throwaway session.
 
-**Warn on first run.** The first-run notice explains that data lives in this browser, that there is no account, and that export is how you move or back it up. Shown once, recorded as `hasSeenLocalDataWarning`.
+**Warn on first run.** The first-run notice explains that data lives in this browser regardless of sign-in, and that export (or optional cloud sync) is how you move or back it up. Shown once, recorded as `hasSeenLocalDataWarning`.
 
 iOS is the weakest platform here: Safari evicts more aggressively and grants persistent storage less readily. The export prompt matters most for iOS users.
 

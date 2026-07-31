@@ -1,7 +1,7 @@
 # Issue and PR Guide
 
 Purpose: templates, labels, and how things get triaged.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Labels
 
@@ -89,7 +89,7 @@ Describe the problem, not the solution.
 **Does it satisfy the five constraints?**
 - [ ] Costs nothing to run
 - [ ] Works on a mid-range phone
-- [ ] Works without an account
+- [ ] Doesn't ask for anything beyond the required Google sign-in
 - [ ] Any generated content would cite its source
 - [ ] Serves a student studying alone
 ```

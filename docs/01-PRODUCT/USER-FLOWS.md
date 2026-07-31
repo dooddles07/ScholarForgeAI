@@ -1,7 +1,7 @@
 # User Flows
 
 Purpose: the step-by-step journeys through the app, including what goes wrong along the way.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Flow 1 — First visit to first question
 
@@ -10,10 +10,15 @@ The most important flow in the product. If this takes too long or asks for too m
 ```
 Landing page
   │  Headline, one line of explanation, and a big drop zone.
-  │  No signup. No tour. No cookie banner (we set no tracking cookies).
+  │  No tour. No cookie banner (we set no tracking cookies).
   ▼
 Drop or pick a file
-  │
+  │  Routes into /app/parse, which is gated behind Google sign-in (ADR-0011).
+  ▼
+Signed out? ──► "Sign in to continue" ──► Google redirect ──► back to an empty parse page
+  │                                                             (the dropped file is lost;
+  │                                                              drop it again — a known,
+  │                                                              accepted rough edge)
   ▼
 Parsing            ─────► Failure ─────► Clear message + what to try instead
   │  Named stages: reading, extracting text, finding topics.       │
@@ -35,7 +40,7 @@ Generating ────────► Quota exhausted ────► Plain mes
 First question on screen
 ```
 
-**Target: under two minutes from landing to first question.** Steps a user is forced to interact with: pick a file, tap Quiz me, tap Start. Three taps.
+**Target: under two minutes from landing to first question**, sign-in included. Steps a user is forced to interact with: pick a file, sign in with Google (first visit only — the session persists after), tap Quiz me, tap Start.
 
 ## Flow 2 — The cram session
 
@@ -109,7 +114,7 @@ Document does not cover it ──► "This document does not seem to cover that.
 
 ## Flow 5 — Moving between devices
 
-No accounts, so this is deliberate and explicit rather than automatic.
+Optional cloud sync ([ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md)) is manual, not automatic, so export/import remains the deliberate, explicit path between devices regardless of sign-in.
 
 ```
 Phone: Settings ─► Export study pack ─► sf-pack-biology.json

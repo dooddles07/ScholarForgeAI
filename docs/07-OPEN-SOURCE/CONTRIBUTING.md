@@ -64,7 +64,7 @@ Every contribution has to satisfy all five. They are what make this project what
 
 1. **It costs nothing.** Any new dependency or service must be permanently free, with a named limit and a stated behaviour at that limit.
 2. **It works on a cheap phone.** Mid-range Android on mobile data, not a flagship on wifi.
-3. **It works without an account.** Nothing may assume a login.
+3. **It doesn't ask for anything beyond the required Google sign-in.** No separate signup, no extra data collection ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)).
 4. **Generated content cites its source.** No exceptions. An uncited item is not shown.
 5. **The words are kind.** Especially error messages. The user is a stressed student.
 

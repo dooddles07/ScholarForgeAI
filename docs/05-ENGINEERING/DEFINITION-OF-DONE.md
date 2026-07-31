@@ -1,7 +1,7 @@
 # Definition of Done
 
 Purpose: the checklists. Nothing merges or releases without passing these.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Per pull request
 
@@ -161,7 +161,7 @@ If a checklist feels like ceremony, these are what it is actually protecting. An
 
 1. **Does it cost nothing?** Every new dependency and service is free, with a named limit and a stated degradation.
 2. **Does it work on a cheap phone?** Not a flagship on wifi.
-3. **Does it work without an account?** Nothing may assume a login.
+3. **Does it avoid asking for anything beyond the required Google sign-in?** No separate signup, no extra data collection ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)).
 4. **Is generated content grounded?** Every item cites a real source, or it is not shown.
 5. **Would a stressed student understand the words?** Including the error messages, especially the error messages.
 

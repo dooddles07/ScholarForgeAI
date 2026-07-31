@@ -1,7 +1,7 @@
 # Content and Copy Guide
 
 Purpose: how the product talks. Every user-facing string, and the rules behind them.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Copy is part of the product, not decoration applied afterwards. The user is a stressed student close to a deadline, and the words either help them or add to the load.
 
@@ -116,7 +116,7 @@ When the shared quota runs out, the alternative offered is a free key, not a pur
 | Drop zone | Drop a file here, or tap to choose one |
 | Formats | PDF, PowerPoint, Word, EPUB, text |
 | Reassurance | Your file stays on your device. We never upload it. |
-| Cost note | Free. No account needed. |
+| Cost note | Free. Sign in with Google. |
 
 The reassurance line sits directly under the drop zone, not in a footer, because that is where scepticism arises.
 
@@ -338,7 +338,7 @@ Names what works first. The connection is already gone; listing losses is not he
 | 80% warning | This app is using about {pct}% of the space your browser allows. |
 | 80% action | Free up space |
 | 95% blocked | There is not enough space to add another document. |
-| First run | Everything is saved in this browser only. There is no account, so if you clear your browser data it will be gone. You can export a backup any time. |
+| First run | Everything is saved in this browser only, tied to your device rather than your account. If you clear your browser data it will be gone. You can export a backup any time, or sign in and sync to protect against that. |
 | Export nudge | You have done a fair bit of work. Want to save a backup file? |
 | Private browsing | You are in a private window, so nothing will be saved once you close it. |
 

@@ -1,7 +1,7 @@
 # Target Users and Personas
 
 Purpose: who we are building for, in enough detail to settle design arguments.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 When a design question comes up, the answer is whatever serves Maya. She is the primary persona and she wins ties.
 
@@ -35,7 +35,7 @@ When a design question comes up, the answer is whatever serves Maya. She is the 
 - Being told plainly when something has failed, and what to do instead
 
 **Design consequences**
-- No account, no login, no email capture in v1
+- Google sign-in required app-wide ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)); no separate signup form or email capture beyond that
 - Upload is the first thing on the first screen
 - Every generated item carries a source citation
 - Progress feedback during any operation over two seconds

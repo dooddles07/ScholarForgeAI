@@ -1,7 +1,7 @@
 # Project Overview
 
 Purpose: what ScholarForge AI is, the problem it solves, and the principles that govern every decision.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## In one sentence
 
@@ -13,7 +13,7 @@ You have a 200-page PDF and an exam on Thursday. Reading it again will not help.
 
 Upload the file. ScholarForge AI reads it and gives you a quiz, a set of flashcards, an explanation of anything confusing, and a full practice exam with an answer key. It remembers what you keep getting wrong and brings it back until you stop getting it wrong.
 
-Free. No account. Works on your phone. Open source.
+Free. Sign in with Google. Works on your phone. Open source.
 
 ## The problem
 
@@ -33,7 +33,7 @@ The pedagogy here is not controversial. Retrieval practice (testing yourself) an
 
 Remove the cost and the tedium at the same time.
 
-**Primary goal.** A student can go from "I have a file" to "I am being quizzed on it" in under two minutes, on a phone, without making an account or paying anything.
+**Primary goal.** A student can go from "I have a file" to "I am being quizzed on it" in under two minutes, on a phone, after a quick Google sign-in and without paying anything.
 
 **Secondary goals**
 - What the AI produces is grounded in the uploaded document, and cites where it came from, so a student can trust it and check it.
@@ -56,7 +56,7 @@ The one thing we do not promise is unlimited AI generation. A shared free API ke
 ## Guiding principles
 
 **1. It has to work in the ninety seconds before someone gives up.**
-No onboarding tour, no signup wall, no empty dashboard. Upload, then results. Every screen we put between the file and the first question is a screen where we lose someone.
+No onboarding tour, no empty dashboard. Sign-in is the one required step ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)) and persists after; everything past it is upload, then results. Every screen we put between the file and the first question is a screen where we lose someone.
 
 **2. Words are part of the product.**
 This is a tool for stressed people. "Processing failed: unable to extract text layer" is a bad sentence. "This PDF looks like a scan, so there is no text for us to read. Try a different file?" is a good one. Copy is specified in [CONTENT-AND-COPY-GUIDE.md](../02-DESIGN/CONTENT-AND-COPY-GUIDE.md) and reviewed like code.

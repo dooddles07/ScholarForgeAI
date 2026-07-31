@@ -18,7 +18,7 @@ Retrieval practice and spaced repetition are among the best-evidenced learning t
 
 Upload a PDF, slide deck, or book. Get quizzes, flashcards, plain-language explanations, and a full practice exam with an answer key. It tracks what you keep getting wrong and brings it back until you stop getting it wrong.
 
-Free forever. No account. Works on a phone. Open source.
+Free forever. Google sign-in required ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)). Works on a phone. Open source.
 
 ## Hard constraints
 
@@ -37,7 +37,7 @@ These are definitional, not preferences.
 |---|---|---|
 | AI provider | Google Gemini 2.5 Flash, free tier, one shared key | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
 | Key protection | Held server-side in a Vercel Node Function, never in the browser | [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) |
-| Storage | Local-first, IndexedDB. No accounts in v1. | [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) |
+| Storage | Local-first, IndexedDB, unchanged | [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) (originally "no accounts in v1," since superseded by [ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)'s mandatory sign-in) |
 | Hosting | Vercel | [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) (originally Cloudflare Pages, [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md)) |
 | Framework | Vite + React SPA | [ADR-0004](../08-DECISIONS/ADR-0004-VITE-SPA-OVER-NEXTJS.md) |
 | Parsing | Entirely in the browser | [ADR-0005](../08-DECISIONS/ADR-0005-CLIENT-SIDE-PARSING.md) |
@@ -124,7 +124,7 @@ Returning eight good questions instead of ten is acceptable, and the interface s
 |---|---|
 | File storage and upload bandwidth | Parsed in the browser; files never transit the network |
 | Database | IndexedDB on the device |
-| Authentication | No accounts |
+| Authentication | Firebase Auth's free tier, not a custom-built one |
 | Embedding API and vector store | BM25 keyword retrieval, locally |
 | PDF generation | Browser print-to-PDF |
 | Text-to-speech | Web Speech API |
@@ -214,7 +214,7 @@ Any change must answer yes to all five.
 
 1. Does it cost nothing, with a named limit and a stated degradation?
 2. Does it work on a cheap phone?
-3. Does it work without an account?
+3. Does it avoid asking for anything beyond the required Google sign-in? (Superseded from "works without an account" by [ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md), which reversed the original no-accounts scope.)
 4. Is generated content grounded in a real source?
 5. Would a stressed student understand the words?
 

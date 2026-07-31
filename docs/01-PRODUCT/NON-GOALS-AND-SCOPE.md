@@ -1,7 +1,7 @@
 # Non-Goals and Scope
 
 Purpose: what we are deliberately not building, and why. This document exists to be cited when saying no.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Scope discipline is the main thing standing between this project and never shipping. Every item below was considered and rejected for v1 on purpose.
 
@@ -108,7 +108,7 @@ Before any feature is accepted, it must clear all five:
 1. Does it serve Maya, the primary persona?
 2. Can it run at $0 with a named free tier and a stated behaviour at the cap?
 3. Does it work on a mid-range phone?
-4. Does it work without an account?
+4. Does it avoid asking for anything beyond the required Google sign-in — no extra data collection, no separate signup ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md))?
 5. Can it be built without a new server-side dependency?
 
 A "no" on any of these means the feature is a v2 discussion, and it gets recorded in [OPEN-QUESTIONS.md](../06-PLANNING/OPEN-QUESTIONS.md) rather than silently dropped.

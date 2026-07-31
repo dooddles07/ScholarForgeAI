@@ -152,7 +152,7 @@ Flow in [USER-FLOWS.md](../01-PRODUCT/USER-FLOWS.md), wording in [CONTENT-AND-CO
 | Sign-in to generate | Contradicts the no-accounts decision and would lose most first-time users |
 | Device fingerprinting | A privacy violation, and trivially defeated |
 | Proof-of-work | Wastes the battery of the exact low-end devices we are targeting |
-| Email verification | No accounts, and a significant friction cost |
+| Email verification | Google sign-in already verifies identity; a separate step would be redundant friction |
 | Paid tier as the overflow | There is no paid tier |
 
 Each of these would reduce abuse and cost more in legitimate users than it saved. The global ceiling already caps the worst case, which makes aggressive per-user defence unnecessary.

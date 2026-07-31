@@ -1,7 +1,7 @@
 # Risks and Mitigations
 
 Purpose: what could go wrong, how likely it is, and what we have already done about it.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Ordered by how much damage each would do.
 
@@ -59,7 +59,7 @@ Browser storage can be cleared by the user, by a cleanup tool, or by the browser
 
 - Export is a first-class, discoverable feature, not buried in settings.
 - An export nudge appears after significant work, at most weekly.
-- A first-run notice states plainly that data is local and there is no account.
+- A first-run notice states plainly that data is local to this device regardless of sign-in.
 - `navigator.storage.persist()` is requested, which browsers grant more readily to installed apps.
 - Private browsing is detected and the user warned.
 - Storage warnings at 80% and 95%.
@@ -188,7 +188,7 @@ A document could contain text trying to instruct the model.
 
 **Already mitigated**
 
-- No signup, so the only barrier to trying it is a file.
+- Google sign-in is the only barrier to trying it — one tap, no separate signup form or email verification.
 - Under two minutes from landing to first question.
 - Free with no trial mechanics.
 - Shareable by link, no install required.

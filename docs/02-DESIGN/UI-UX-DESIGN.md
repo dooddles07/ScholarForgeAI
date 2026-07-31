@@ -1,7 +1,7 @@
 # UI and UX Design
 
 Purpose: what each screen contains and why it is arranged that way.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Tokens in [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md). Adaptation rules in [RESPONSIVE-AND-MOBILE.md](RESPONSIVE-AND-MOBILE.md). Copy in [CONTENT-AND-COPY-GUIDE.md](CONTENT-AND-COPY-GUIDE.md).
 
@@ -62,7 +62,7 @@ Reached at `/app/library`. The calm register.
 │  Your file stays on your device.   │
 │  We never upload it.               │
 │                                    │
-│  Free. No account needed.          │
+│  Free. Sign in with Google.        │
 └────────────────────────────────────┘
 ```
 
