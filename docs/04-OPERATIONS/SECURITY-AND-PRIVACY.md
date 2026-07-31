@@ -45,8 +45,8 @@ It is used to fulfil the request and then discarded. It is never written to stor
 | Quiz and exam results | The user's browser | The user only |
 | Progress and review history | The user's browser | The user only |
 | A user-supplied API key | The user's browser | The user only |
-| Aggregate request counters | Cloudflare Workers KV | Us, as integers with no identifier |
-| The project API key | Cloudflare environment secrets | Us only |
+| Aggregate request counters | Upstash Redis | Us, as integers with no identifier |
+| The project API key | Vercel environment variables | Us only |
 | Cloud sync backup (opt-in only) | Firebase Firestore, one document per user at `backups/{uid}` | The signed-in user only, enforced by Firestore security rules |
 
 Everything in the first six rows is local to the device. See [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md).
@@ -55,7 +55,7 @@ Everything in the first six rows is local to the device. See [ADR-0001](../08-DE
 
 ## The one secret
 
-`GEMINI_API_KEY`, held as a Cloudflare environment secret.
+`GEMINI_API_KEY`, held as a Vercel environment variable.
 
 **Rules, non-negotiable:**
 
@@ -224,7 +224,7 @@ If the shared key is compromised:
 
 1. Activate the kill switch, disabling shared-key generation without a redeploy
 2. Revoke the key in Google AI Studio
-3. Issue a new key and update the Cloudflare secret
+3. Issue a new key and update the Vercel environment variable
 4. Deactivate the kill switch
 5. Determine how it leaked and close that path
 6. Record the incident in [ACTIVITY-LOG.md](../ACTIVITY-LOG.md)
