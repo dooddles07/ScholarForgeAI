@@ -138,12 +138,29 @@ Exam output is accessible on paper too: real text rather than an image, sufficie
 
 ### Automated, in CI
 
-- `axe-core` on every route, failing the build on a violation
-- Lighthouse accessibility, minimum score 95
-- A check that no page scrolls horizontally at 320px
-- A check that all interactive elements have accessible names
+`tests/e2e/axe-audit.mjs`, run by the `accessibility` job in `.github/workflows/ci.yml` and
+locally with `npm run test:a11y` against a preview server on port 5180. It checks:
+
+- `axe-core` (WCAG 2.0/2.1/2.2 A and AA) on each route it can reach, failing the build on a violation
+- No horizontal scroll at either viewport
+- Both mobile (390px) and desktop (1280px), with animation disabled so contrast is measured on a settled page
 
 Automated tools catch perhaps a third of real problems. They are a floor, not a standard.
+
+#### Coverage gap
+
+**Only the marketing page is currently audited.** Every `/app` route is behind mandatory Google
+sign-in ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)), which the audit script
+cannot satisfy, so it reaches the sign-in gate instead of the route. This was silent until the
+script learned to detect the gate — it audited that same screen ten times and reported clean. It
+now names every route it could not reach.
+
+Lighthouse is not wired up at all, despite the score-95 target below.
+
+Closing the gap needs a signed-in session in CI. The two honest options are the Firebase Auth
+emulator with a seeded user, or a build-time flag that bypasses the gate for audit builds — the
+latter puts an auth bypass in the codebase and would have to be provably unreachable in
+production. Neither has been chosen yet.
 
 ### Manual, per release
 

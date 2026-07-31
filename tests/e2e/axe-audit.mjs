@@ -31,6 +31,20 @@ const VIEWPORTS = [
 
 const browser = await chromium.launch();
 let totalViolations = 0;
+const unaudited = [];
+
+/*
+ * Every /app route sits behind mandatory Google sign-in (ADR-0011), which this script cannot
+ * satisfy. Without the check below the audit still passes: it silently reads the sign-in screen
+ * ten times over and reports it clean. A sweep that covers nothing while claiming to cover
+ * everything is worse than no sweep, so unreachable routes are named in the summary.
+ */
+async function isSignInGate(page) {
+  return await page.evaluate(() => {
+    const heading = document.querySelector('h1');
+    return heading?.textContent?.trim() === 'Sign in to continue';
+  });
+}
 
 /*
  * Colour contrast must be measured once the page has settled. Sampling mid-transition reads a
@@ -62,6 +76,12 @@ for (const viewport of VIEWPORTS) {
     await page.goto(`${BASE}${route}`);
     await page.waitForTimeout(500);
     await settle(page);
+
+    /* The gate itself is worth auditing once, not ten times under other routes' names. */
+    if (route !== '/' && (await isSignInGate(page))) {
+      unaudited.push(`[${viewport.name}] ${route}`);
+      continue;
+    }
     await page.addScriptTag({ content: axeSource });
 
     const results = await page.evaluate(async () => {
@@ -96,5 +116,15 @@ for (const viewport of VIEWPORTS) {
 }
 
 await browser.close();
+
+if (unaudited.length > 0) {
+  console.log(`\n${unaudited.length} route/viewport pairs were NOT audited (sign-in gate):`);
+  for (const entry of unaudited) console.log(`  ${entry}`);
+  console.log(
+    '\nA clean result below covers only the routes that were actually reached. Auditing the rest\n' +
+      'needs a signed-in session — see ACCESSIBILITY.md, "Coverage gap".',
+  );
+}
+
 console.log(totalViolations === 0 ? '\nClean.' : `\n${totalViolations} issues.`);
 process.exit(totalViolations === 0 ? 0 : 1);

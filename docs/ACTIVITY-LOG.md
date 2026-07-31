@@ -51,11 +51,15 @@ Then the server side, which had **no tests at all** — including the grounding 
 
 Last, the mock-mode gap [AI-INTEGRATION.md](03-ARCHITECTURE/AI-INTEGRATION.md) had flagged as real: fixtures covered only the happy path, so the quota wall and the error screens could not be seen without real credentials and a genuinely spent quota. Added `VITE_MOCK_FAILURE`, which forces any of the proxy error codes, plus an `UNGROUNDED` value that succeeds and returns nothing — the case where every item fails the server's citation check, which is a 200 with an empty result and therefore a different UI path from an error. A misspelled value throws with the list of valid ones rather than failing obscurely. Seven tests in `src/ai/client.test.ts`, and the doc's "covers only the happy path" caveat is now a table of what each value does.
 
+A component-test pass followed, the first in the codebase: 14 tests across `StudyingSection`, `AppearanceSection`, and `DangerZone`, covering the behaviour that was broken or dead before this work — the cards-per-day clamp, theme defaulting to `system`, reduce-motion mapping onto its union, and the now-dismissible local-data warning. The layer-boundary ESLint rule blocked them from importing `persistence`, correctly for shipping code but not for a test whose whole point is asserting that a control persisted; `eslint.config.js` now exempts `**/*.test.{ts,tsx}` with that reasoning recorded inline. Production boundaries are unchanged.
+
+**Finding: the accessibility sweep covers almost nothing.** `tests/e2e/axe-audit.mjs` lists ten routes, nine of them under `/app`. Since [ADR-0011](08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) made sign-in mandatory, the script has been reaching the sign-in gate for all nine and auditing that same screen repeatedly, reporting clean. Its sample-document seeding step clicks a button behind the gate and swallows the failure, which is why nothing surfaced. The script now detects the gate and names every route it could not reach, so a clean result states what it actually covered. Added the missing `npm run test:a11y` script and documented the gap in [ACCESSIBILITY.md](02-DESIGN/ACCESSIBILITY.md), which also claimed a Lighthouse check that does not exist.
+
 **Next action**
-Nothing outstanding.
+Decide how the audit gets a signed-in session: Firebase Auth emulator with a seeded user, or a build-time gate bypass for audit builds. The second is faster and puts an auth bypass in the codebase. Not chosen yet, so the sweep stays at one route until it is.
 
 **Blockers**
-None.
+None blocking, but the accessibility sweep should not be trusted as coverage until the above is resolved.
 
 ---
 
