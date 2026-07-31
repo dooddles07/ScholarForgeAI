@@ -57,7 +57,7 @@ ScholarForge AI does the tedious part, for nothing.
 | Storage | IndexedDB via Dexie |
 | Scheduling | `ts-fsrs` |
 | Retrieval | BM25, computed locally. No embeddings. |
-| AI | Google Gemini 2.5 Flash, behind a Vercel Edge Function |
+| AI | Google Gemini (flash tier), behind a Vercel Edge Function |
 | Hosting | Vercel |
 
 Every dependency is MIT, Apache-2.0, BSD, or ISC. Nothing you fork inherits a licence trap.

@@ -113,6 +113,20 @@ Newest entries at the top.
 **Verified**
 - Typecheck, lint, full test suite (34 tests), and build all green. This was also a final end-to-end check of everything built across the session.
 
+## 2026-07-30 — First live end-to-end test: two more real deploy bugs found and fixed
+
+**Done**
+- **`/api/generate` 404ing in production**: `vercel.json`'s SPA rewrite was `"source": "/(.*)"`, matching every path including `/api/generate` — Vercel's rewrite matched before the function router got a chance, so every API call returned the SPA's `index.html` (reported by the browser as 404 since it wasn't JSON). Changed the source to `/((?!api/).*)` so `/api/*` is excluded from the fallback. Confirmed fixed by curling the live endpoint directly: `403 FORBIDDEN` (correct — no Origin header) instead of `404`.
+- **`gemini-2.5-flash` returns 404 "no longer available to new users"**: confirmed by curling Google's API directly with the real key — the key itself is valid (auth passed), but that specific dated model id has been retired for accounts created after some point, with no warning anywhere in the docs this project was built from. Switched the default model, `.env`/`.env.example`, and every doc reference to `gemini-flash-latest` — Google's own rolling alias, so this can't happen again from a stale pinned version. Verified end-to-end with real `responseSchema` structured output against the live key: clean JSON back, model resolved to `gemini-3.6-flash` under the alias.
+- Diagnosed both by testing the actual deployed endpoint and the actual Gemini API directly with curl, rather than reasoning about the code — the first two "fixes" that looked plausible from the browser console (CSP hash, `QuotaResult` narrowing) were real but didn't explain the 404 the user kept hitting; only calling the live endpoint directly surfaced the rewrite bug, and only calling Google's API directly with the actual key surfaced the model retirement.
+
+**Verified**
+- Live curl to `/api/generate` with a valid origin now reaches Gemini (was 404, now the request pipeline completes). Direct Gemini API test with the real key and a `responseSchema` matching this project's structured-output usage: `200`, valid JSON, matches the shape the app expects.
+- Typecheck, lint, full test suite (37 tests), and build all green.
+
+**Not yet done**
+- Full quiz/cards/chat generation not yet exercised end-to-end through the actual UI against the redeployed model — next step once this deploys.
+
 ## 2026-07-30 — Post-deploy fixes: Vercel function typecheck, CSP, colour contrast
 
 **Done**

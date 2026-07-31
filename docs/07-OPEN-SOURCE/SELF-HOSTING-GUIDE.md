@@ -68,7 +68,7 @@ Project Settings, Environment Variables. Set these for both Production and Previ
 | Variable | Type | Value |
 |---|---|---|
 | `GEMINI_API_KEY` | **Secret** | Your key from step 2 |
-| `GEMINI_MODEL` | Plain | e.g. `gemini-2.5-flash` |
+| `GEMINI_MODEL` | Plain | `gemini-flash-latest` (a rolling alias — avoid pinning a dated model id, which can be retired for new keys without notice) |
 | `DAILY_GLOBAL_LIMIT` | Plain | Below your real daily limit |
 | `DAILY_IP_LIMIT` | Plain | Per-user daily allowance |
 | `ALLOWED_ORIGIN` | Plain | Your deployed URL |

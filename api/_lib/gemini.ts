@@ -41,7 +41,9 @@ export interface RawChatResult {
   citations: { chunkId: string; quote: string }[];
 }
 
-const MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
+/* A rolling alias, not a pinned version: gemini-2.5-flash was retired for new API keys without
+   notice mid-project, which is exactly the failure this avoids going forward. */
+const MODEL = process.env.GEMINI_MODEL ?? 'gemini-flash-latest';
 
 /* The model only ever sees chunk id + text, never a page number: page numbers in the final
    citation always come from our own chunk data, never from the model's own claim. */
