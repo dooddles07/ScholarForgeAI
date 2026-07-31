@@ -29,13 +29,29 @@ export function useCloudSync() {
 
     void (async () => {
       try {
-        const [{ firebaseAuth }, { onAuthStateChanged }] = await Promise.all([
+        const [{ firebaseAuth }, { onAuthStateChanged, getRedirectResult }] = await Promise.all([
           import('@/lib/firebase'),
           import('firebase/auth'),
         ]);
         if (cancelled) return;
 
-        unsubscribe = onAuthStateChanged(firebaseAuth(), (user) => {
+        const auth = firebaseAuth();
+
+        /*
+         * Required to complete a signInWithRedirect flow: without this call, a failed redirect
+         * (e.g. third-party storage blocked between this origin and the authDomain) fails silently
+         * and onAuthStateChanged never fires, leaving the UI stuck on signedOut with no error.
+         */
+        try {
+          await getRedirectResult(auth);
+        } catch (redirectError) {
+          if (cancelled) return;
+          console.error('[cloud-sync] redirect sign-in failed', redirectError);
+        }
+
+        if (cancelled) return;
+
+        unsubscribe = onAuthStateChanged(auth, (user) => {
           if (!user) {
             uidRef.current = null;
             setEmail(null);
