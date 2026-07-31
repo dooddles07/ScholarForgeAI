@@ -20,3 +20,11 @@ export async function hashIp(ip: string): Promise<string> {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
+
+/* Google API keys are opaque alphanumeric/dash/underscore tokens with no fixed length Google
+   publishes — this is a generic sanity bound, not a format match, so it won't break if the key
+   shape changes. Catches garbage before it wastes a round trip to Gemini. */
+export function isPlausibleApiKey(key: string): boolean {
+  const trimmed = key.trim();
+  return trimmed.length >= 20 && trimmed.length <= 200 && /^[A-Za-z0-9_-]+$/.test(trimmed);
+}

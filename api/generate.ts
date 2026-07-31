@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { isAllowedOrigin, clientIp, hashIp } from './_lib/security.js';
+import { isAllowedOrigin, clientIp, hashIp, isPlausibleApiKey } from './_lib/security.js';
 import { checkAndConsumeQuota } from './_lib/quota.js';
 import {
   callGemini,
@@ -64,6 +64,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   const usingOwnKey = Boolean(body.apiKey);
+
+  if (usingOwnKey && !isPlausibleApiKey(body.apiKey!)) {
+    res.status(400).json({ error: 'INVALID_API_KEY' });
+    return;
+  }
+
   let apiKey = body.apiKey ?? undefined;
 
   if (!usingOwnKey) {
