@@ -2,6 +2,11 @@
   "name": "scholarforge-ai",
   "private": true,
   "version": "0.1.0",
+  "description": "Turn your notes into practice. Free, sign in with Google, works offline.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dooddles07/ScholarForgeAI.git"
+  },
   "license": "MIT",
   "type": "module",
   "scripts": {
