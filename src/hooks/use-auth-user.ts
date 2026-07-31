@@ -13,7 +13,7 @@ interface AuthState {
 }
 
 /* Module-level singleton: every useAuthUser() call site (AuthGate, useCloudSync, ...) shares one
-   Firebase subscription and one getRedirectResult() call instead of each mounting its own. */
+   Firebase subscription instead of each mounting its own. */
 let sharedState: AuthState = { status: 'loading', user: null };
 const listeners = new Set<(state: AuthState) => void>();
 let initStarted = false;
@@ -29,22 +29,11 @@ function ensureInitialized(): void {
 
   void (async () => {
     try {
-      const [{ firebaseAuth }, { onAuthStateChanged, getRedirectResult }] = await Promise.all([
+      const [{ firebaseAuth }, { onAuthStateChanged }] = await Promise.all([
         import('@/lib/firebase'),
         import('firebase/auth'),
       ]);
       const auth = firebaseAuth();
-
-      /*
-       * Required to complete a signInWithRedirect flow: without this call, a failed redirect
-       * (e.g. third-party storage blocked between this origin and the authDomain) fails silently
-       * and onAuthStateChanged never fires, leaving the UI stuck signed-out with no error.
-       */
-      try {
-        await getRedirectResult(auth);
-      } catch (redirectError) {
-        console.error('[auth] redirect sign-in failed', redirectError);
-      }
 
       onAuthStateChanged(auth, (firebaseUser) => {
         setSharedState(
@@ -73,12 +62,16 @@ export function useAuthUser(): { status: AuthStatus; user: AuthUser | null } {
   return state;
 }
 
+/* Popup, not redirect: the redirect flow hands the session off through Firebase's cross-site
+   authDomain, which Chrome/Safari/Firefox now block as third-party storage, silently bouncing the
+   user back to the sign-in screen. A popup opened from this button's own click is a user gesture,
+   so popup blockers leave it alone. */
 export async function signInWithGoogle(): Promise<void> {
-  const [{ firebaseAuth, googleProvider }, { signInWithRedirect }] = await Promise.all([
+  const [{ firebaseAuth, googleProvider }, { signInWithPopup }] = await Promise.all([
     import('@/lib/firebase'),
     import('firebase/auth'),
   ]);
-  await signInWithRedirect(firebaseAuth(), googleProvider);
+  await signInWithPopup(firebaseAuth(), googleProvider);
 }
 
 export async function signOutOfGoogle(): Promise<void> {

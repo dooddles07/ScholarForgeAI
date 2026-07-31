@@ -12,3 +12,4 @@ test-results
 .playwright-mcp
 .vite
 .claude/worktrees
+.firebase/
