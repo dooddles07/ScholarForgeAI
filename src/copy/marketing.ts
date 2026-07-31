@@ -8,7 +8,7 @@ export const hero = {
   dropzoneActive: 'Let go and we will start reading',
   formats: 'PDF, PowerPoint, Word, EPUB, text',
   privacy: 'Your file stays on your device. We never upload it.',
-  cost: 'Free. No account needed.',
+  cost: 'Free. Sign in with Google to start.',
   scrollHint: 'How it works',
 } as const;
 
@@ -76,7 +76,7 @@ export const grounding = {
 export const privacy = {
   heading: 'Your file never leaves your device',
   body: [
-    'Your document is read in your browser and stored in your browser. There is no account, no database, and no tracking. No cookie banner either, because we set no cookies.',
+    'Your document is read in your browser and stored in your browser. It is never uploaded to a database or tracked. No cookie banner either, because we set no cookies.',
   ],
   caveatLabel: 'One honest caveat',
   caveat:
@@ -115,7 +115,7 @@ export const openSource = {
 
 export const closing = {
   heading: 'Bring a file',
-  body: 'No account, nothing to install, nothing to pay. Pick something you have an exam on.',
+  body: 'Sign in with Google, nothing to install, nothing to pay. Pick something you have an exam on.',
   cta: 'Choose a file',
   footnote:
     'Built so that students who cannot pay for study tools do not have to go without them.',

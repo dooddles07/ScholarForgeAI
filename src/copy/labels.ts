@@ -153,7 +153,7 @@ export const storage = {
   action80: 'Free up space',
   blocked95: 'There is not enough space to add another document.',
   firstRun:
-    'Everything is saved in this browser only. There is no account, so if you clear your browser data it will be gone. You can export a backup any time.',
+    'Everything is saved in this browser only unless you sync it. If you clear your browser data without syncing first, it will be gone. You can export a backup any time.',
   exportNudge: 'You have done a fair bit of work. Want to save a backup file?',
   privateBrowsing: 'You are in a private window, so nothing will be saved once you close it.',
 } as const;
@@ -210,7 +210,7 @@ export const settings = {
   importError: 'That did not look like a ScholarForge backup file.',
   syncHeading: 'Sync across devices',
   syncIntro:
-    'Sign in with Google to back up your data and pick it up on another device. Everything else about this app still works with no account at all.',
+    'Back up your data to your Google account and pick it up on another device. Nothing syncs automatically until you choose to.',
   signInWithGoogle: 'Sign in with Google',
   syncChecking: 'Checking for a backup...',
   syncBackupFound: 'Found a backup from another device.',

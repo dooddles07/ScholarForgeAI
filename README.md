@@ -4,7 +4,7 @@
 
 Upload a PDF, slide deck, or book. Get quizzes, flashcards, plain-language explanations, and a full practice exam with an answer key.
 
-Free forever. No account. Works on your phone. Open source.
+Free forever. Sign in with Google. Works on your phone. Open source.
 
 > **Status: the interface is built, and questions come from a real model behind a server-side proxy** ([`api/generate.ts`](api/generate.ts)) so nobody has to set anything up. Upload a PDF and it is genuinely parsed, stored, and quizzed, entirely in your browser — only the extracted text is ever sent anywhere, and only to generate what you asked for.
 >
@@ -40,7 +40,7 @@ ScholarForge AI does the tedious part, for nothing.
 
 ## The principles
 
-**Your files never leave your device.** Documents are parsed in your browser and stored in your browser. Nothing is uploaded. There is no account, no database, and no tracking.
+**Your files never leave your device.** Documents are parsed in your browser and stored in your browser. Nothing is uploaded, and there is no tracking. A free Google sign-in is required to use the app, but your files are never stored in a database unless you choose to sync a backup.
 
 **Nothing is invented.** Every question, answer, and explanation comes from your document and cites the page it came from. Anything we cannot trace to a real source is discarded before you see it. A study tool that hallucinates is worse than no tool.
 

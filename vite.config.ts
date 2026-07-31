@@ -14,7 +14,7 @@ export default defineConfig({
       manifest: {
         name: 'ScholarForge AI',
         short_name: 'ScholarForge',
-        description: 'Turn your notes into practice. Free, no account, works offline.',
+        description: 'Turn your notes into practice. Free, sign in with Google, works offline.',
         start_url: '/',
         scope: '/',
         display: 'standalone',

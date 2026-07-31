@@ -48,7 +48,7 @@ export default function MarketingPage() {
       <footer className="border-t border-ink-line/70 py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 text-sm text-ink-muted sm:px-8">
           <p>ScholarForge AI</p>
-          <p>Free forever. No account. Open source.</p>
+          <p>Free forever. Google sign-in required. Open source.</p>
         </div>
       </footer>
     </div>
