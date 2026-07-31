@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { exportBackup, importBackup } from '@/persistence/backup';
 import { updateSettings } from '@/persistence/settings';
+import { useAuthUser, signInWithGoogle, signOutOfGoogle } from '@/hooks/use-auth-user';
 import type { BackupPayload } from '@/domain/export/backup';
 
 export type CloudSyncStatus =
@@ -12,104 +13,65 @@ export type CloudSyncStatus =
   | 'syncing'
   | 'error';
 
-/*
- * Every Firebase import below is dynamic, including inside the effect: Settings is a route many
- * visitors open without ever touching sync, and this keeps the SDK out of that page's chunk
- * until this hook actually runs (see Task 1's note on bundle isolation).
- */
 export function useCloudSync() {
+  const { status: authStatus, user } = useAuthUser();
   const [status, setStatus] = useState<CloudSyncStatus>('loading');
   const [email, setEmail] = useState<string | null>(null);
   const foundBackupRef = useRef<BackupPayload | null>(null);
   const uidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
+    if (authStatus === 'loading') {
+      setStatus('loading');
+      return;
+    }
+
+    if (!user) {
+      uidRef.current = null;
+      setEmail(null);
+      setStatus('signedOut');
+      return;
+    }
+
+    uidRef.current = user.uid;
+    setEmail(user.email);
+    setStatus('checkingBackup');
+
     let cancelled = false;
 
     void (async () => {
       try {
-        const [{ firebaseAuth }, { onAuthStateChanged, getRedirectResult }] = await Promise.all([
-          import('@/lib/firebase'),
-          import('firebase/auth'),
-        ]);
+        const { pullBackupFromCloud } = await import('@/persistence/sync');
+        const backup = await pullBackupFromCloud(user.uid);
         if (cancelled) return;
-
-        const auth = firebaseAuth();
-
-        /*
-         * Required to complete a signInWithRedirect flow: without this call, a failed redirect
-         * (e.g. third-party storage blocked between this origin and the authDomain) fails silently
-         * and onAuthStateChanged never fires, leaving the UI stuck on signedOut with no error.
-         */
-        try {
-          await getRedirectResult(auth);
-        } catch (redirectError) {
-          if (cancelled) return;
-          console.error('[cloud-sync] redirect sign-in failed', redirectError);
+        if (backup) {
+          foundBackupRef.current = backup;
+          setStatus('backupFound');
+        } else {
+          setStatus('signedIn');
         }
-
-        if (cancelled) return;
-
-        unsubscribe = onAuthStateChanged(auth, (user) => {
-          if (!user) {
-            uidRef.current = null;
-            setEmail(null);
-            setStatus('signedOut');
-            return;
-          }
-
-          uidRef.current = user.uid;
-          setEmail(user.email);
-          setStatus('checkingBackup');
-
-          void (async () => {
-            try {
-              const { pullBackupFromCloud } = await import('@/persistence/sync');
-              const backup = await pullBackupFromCloud(user.uid);
-              if (cancelled) return;
-              if (backup) {
-                foundBackupRef.current = backup;
-                setStatus('backupFound');
-              } else {
-                setStatus('signedIn');
-              }
-            } catch {
-              if (cancelled) return;
-              setStatus('signedIn');
-            }
-          })();
-        });
       } catch {
         if (cancelled) return;
-        setStatus('error');
+        setStatus('signedIn');
       }
     })();
 
     return () => {
       cancelled = true;
-      unsubscribe?.();
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-run only on identity change, not email
+  }, [authStatus, user?.uid]);
 
   const signIn = useCallback(async () => {
     try {
-      const [{ firebaseAuth, googleProvider }, { signInWithRedirect }] = await Promise.all([
-        import('@/lib/firebase'),
-        import('firebase/auth'),
-      ]);
-      await signInWithRedirect(firebaseAuth(), googleProvider);
+      await signInWithGoogle();
     } catch {
       setStatus('error');
     }
   }, []);
 
   const signOut = useCallback(async () => {
-    const [{ firebaseAuth }, { signOut: firebaseSignOut }] = await Promise.all([
-      import('@/lib/firebase'),
-      import('firebase/auth'),
-    ]);
-    await firebaseSignOut(firebaseAuth());
+    await signOutOfGoogle();
   }, []);
 
   const restoreFoundBackup = useCallback(async () => {
