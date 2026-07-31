@@ -1,7 +1,7 @@
 # Monitoring and Limits
 
 Purpose: how we see what is happening without tracking anyone, and what to do about what we see.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## The constraint
 
@@ -15,14 +15,14 @@ All in Upstash Redis. All plain integers. No identifier attached to any of them.
 
 | Counter | Key | Purpose |
 |---|---|---|
+| Per-IP daily requests | `ip:<hash>:<date>` | Stops one user draining the shared pool |
 | Global daily requests | `global:<date>` | Quota enforcement, and the only real usage signal |
-| Requests per task | `task:<task>:<date>` | Which features people actually use |
-| Errors by code | `err:<code>:<date>` | Whether something is broken in the field |
-| Quota exhaustion events | `exhausted:<date>` | Whether the shared key is big enough |
-| Per-IP limit hits | `iplimit:<date>` | Possible abuse, or a campus behind one address |
-| BYOK requests | `byok:<date>` | How many users have moved to their own key |
+| Kill switch | `killswitch` (boolean) | Disables shared-key generation without a redeploy |
 
-The BYOK counter is the most strategically interesting number in the project. It measures how well the escape hatch is working, which determines whether popularity is survivable.
+That's the complete set `api/_lib/quota.ts` actually tracks. Richer counters — per task, per error
+code, quota-exhaustion events, BYOK adoption — aren't built. That's a real gap in visibility, not a
+privacy-driven omission like the table below: knowing how well the BYOK escape hatch is working
+would be useful and currently isn't measurable at all.
 
 ### What is deliberately absent
 
@@ -56,11 +56,7 @@ Counters are read from the Upstash console's Data Browser, or via its REST API w
 | Signal | Likely meaning | Response |
 |---|---|---|
 | Global requests near the ceiling daily | Real usage, and the shared key is undersized | Promote BYOK more prominently; consider a fallback provider |
-| Exhaustion before noon, consistently | Same, more urgent | As above |
-| `PROVIDER_ERROR` rising | Provider instability | Wait; check the provider status page |
-| `GROUNDING_FAILED` rising | Prompt quality regression | Review recent prompt changes in [PROMPT-LIBRARY.md](../03-ARCHITECTURE/PROMPT-LIBRARY.md) |
-| `TEXT_TOO_LARGE` rising | People uploading bigger documents than expected | Check the retrieval tier logic |
-| Per-IP limit hits rising | Abuse, or a shared network | Usually a shared network. Leave it. BYOK is the answer. |
+| Vercel Functions error rate rising | Provider instability, or a bug in `api/generate.ts` | Check the Vercel Functions dashboard and Gemini's status page |
 | Upstash command volume near the free allowance | Unexpected; would mean enormous traffic | Reduce counter granularity |
 | Sudden implausible spike | Possible abuse or key leak | Kill switch, investigate, rotate if needed |
 | Build failures | A broken commit | Fix; check CI passed before merge |
@@ -85,7 +81,7 @@ What compensates:
 
 | Cadence | Check |
 |---|---|
-| Weekly | Global daily counter, exhaustion events, error counts |
+| Weekly | Global daily counter, spot-check a few per-IP counters |
 | Weekly | GitHub issues |
 | Monthly | Google AI Studio usage against our counter, to confirm they agree |
 | Monthly | Vercel, Upstash, and Firebase dashboards show $0 |
