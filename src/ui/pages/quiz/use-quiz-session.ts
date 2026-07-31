@@ -31,7 +31,10 @@ export function useQuizSession(doc: StoredDocument | undefined) {
       setError(null);
       setRequested(config.count);
       try {
-        const generated = await generateQuestions(doc, config.count);
+        const generated = await generateQuestions(doc, config.count, {
+          difficulty: config.difficulty,
+          types: config.types,
+        });
         setQuestions(generated.map(shuffleOptions));
         setIndex(0);
         setResponses([]);

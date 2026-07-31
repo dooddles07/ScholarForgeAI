@@ -8,16 +8,22 @@ export interface GroundedChunk {
 }
 
 export type GenerateKind = 'questions' | 'cards' | 'chat';
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
+export type QuestionType = 'mcq' | 'trueFalse' | 'shortAnswer' | 'fillBlank';
 
 export interface GenerateRequestBody {
   kind: GenerateKind;
   chunks: GroundedChunk[];
   count?: number;
   question?: string;
+  /* questions only. Both optional: an absent value means no restriction, matching today's
+     behaviour exactly for any caller that doesn't send them. */
+  difficulty?: QuestionDifficulty;
+  types?: QuestionType[];
 }
 
 export interface RawQuestionItem {
-  type: 'mcq' | 'trueFalse' | 'shortAnswer' | 'fillBlank';
+  type: QuestionType;
   prompt: string;
   options?: string[];
   correctIndex?: number;
@@ -60,7 +66,9 @@ const GROUNDING_RULE =
   'it came from, copied from the [chunk ...] marker, and a short quote from that chunk. ' +
   'Never invent a fact, a number, or a chunk id that is not present below.';
 
-function questionSchema(count: number) {
+const ALL_QUESTION_TYPES: QuestionType[] = ['mcq', 'trueFalse', 'shortAnswer', 'fillBlank'];
+
+function questionSchema(count: number, types: QuestionType[] = ALL_QUESTION_TYPES) {
   return {
     type: 'object',
     properties: {
@@ -70,7 +78,7 @@ function questionSchema(count: number) {
         items: {
           type: 'object',
           properties: {
-            type: { type: 'string', enum: ['mcq', 'trueFalse', 'shortAnswer', 'fillBlank'] },
+            type: { type: 'string', enum: types.length > 0 ? types : ALL_QUESTION_TYPES },
             prompt: { type: 'string' },
             options: { type: 'array', items: { type: 'string' } },
             correctIndex: { type: 'integer' },
@@ -132,17 +140,33 @@ const chatSchema = {
   required: ['content', 'citations'],
 };
 
+const TYPE_LABELS: Record<QuestionType, string> = {
+  mcq: 'multiple choice',
+  trueFalse: 'true/false',
+  shortAnswer: 'short answer',
+  fillBlank: 'fill-in-the-blank',
+};
+
+const DIFFICULTY_INSTRUCTIONS: Record<QuestionDifficulty, string> = {
+  easy: 'Recall level: the student should be able to answer from remembering a stated fact.',
+  medium: 'Understanding level: the student should have to explain the idea, not just recall it.',
+  hard: 'Application level: the student should have to use the concept in a new situation, not just recall or explain it.',
+};
+
 function promptFor(body: GenerateRequestBody): { prompt: string; schema: object } {
   const passages = passagesBlock(body.chunks);
 
   if (body.kind === 'questions') {
     const count = body.count ?? 8;
+    const types = body.types && body.types.length > 0 ? body.types : ALL_QUESTION_TYPES;
+    const typeList = types.map((t) => TYPE_LABELS[t]).join(', ');
+    const difficultyClause = body.difficulty ? ` ${DIFFICULTY_INSTRUCTIONS[body.difficulty]}` : '';
     return {
       prompt:
         `${GROUNDING_RULE}\n\nWrite ${count} study questions from these passages, a mix of ` +
-        `multiple choice, true/false, short answer, and fill-in-the-blank. Each explanation ` +
-        `should be one sentence a student can learn from.\n\n${passages}`,
-      schema: questionSchema(count),
+        `${typeList}. Each explanation should be one sentence a student can learn from.` +
+        `${difficultyClause}\n\n${passages}`,
+      schema: questionSchema(count, types),
     };
   }
 

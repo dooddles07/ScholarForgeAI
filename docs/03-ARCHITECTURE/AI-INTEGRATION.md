@@ -10,7 +10,7 @@ Decision context in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.
 ```
 Browser (src/ai/client.ts)
   │  POST /api/generate
-  │  Body: { kind, chunks, count?, question?, apiKey? }
+  │  Body: { kind, chunks, count?, question?, difficulty?, types?, apiKey? }
   │  apiKey travels in the body, not a header — only present if the user supplied their own
   │  No project key. Nothing in the bundle to steal.
   ▼

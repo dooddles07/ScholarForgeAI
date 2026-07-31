@@ -1,4 +1,12 @@
-import type { Card, Citation, Question, StoredDocument, TextChunk } from '@/domain/types';
+import type {
+  Card,
+  Citation,
+  Difficulty,
+  Question,
+  QuestionType,
+  StoredDocument,
+  TextChunk,
+} from '@/domain/types';
 import { bm25Rank } from '@/domain/retrieval/bm25';
 import { mockQuestions } from './mock/questions';
 import { mockCards } from './mock/cards';
@@ -137,9 +145,15 @@ function toCard(documentId: string, deckId: string, item: ProxyCardItem): Card {
   };
 }
 
+export interface QuestionConfig {
+  difficulty?: Difficulty;
+  types?: QuestionType[];
+}
+
 export async function generateQuestions(
   doc: StoredDocument,
   count: number,
+  config: QuestionConfig = {},
   options: GenerateOptions = {},
 ): Promise<Question[]> {
   if (doc.id === MOCK_DOC_ID) {
@@ -155,7 +169,13 @@ export async function generateQuestions(
   }
 
   const data = await callProxy(
-    { kind: 'questions', chunks: toProxyChunks(doc.chunks), count },
+    {
+      kind: 'questions',
+      chunks: toProxyChunks(doc.chunks),
+      count,
+      difficulty: config.difficulty,
+      types: config.types,
+    },
     options,
   );
   return (data.items as ProxyQuestionItem[]).map((item) => toQuestion(doc.id, item));

@@ -18,11 +18,18 @@ Content-Type: application/json
 interface GenerateRequest {
   kind: 'questions' | 'cards' | 'chat';
   chunks: { id: string; text: string; pageStart: number; pageEnd: number }[];
-  count?: number;      // questions/cards only; defaults to 8 for questions, 12 for cards
-  question?: string;   // chat only
-  apiKey?: string;     // the user's own key, when they've supplied one in Settings
+  count?: number;              // questions/cards only; defaults to 8 for questions, 12 for cards
+  question?: string;           // chat only
+  difficulty?: 'easy' | 'medium' | 'hard';   // questions only, optional
+  types?: ('mcq' | 'trueFalse' | 'shortAnswer' | 'fillBlank')[];  // questions only, optional
+  apiKey?: string;             // the user's own key, when they've supplied one in Settings
 }
 ```
+
+`difficulty` and `types` are real and enforced: an absent `difficulty` gets no instruction (the
+model picks its own mix), and an absent or empty `types` allows all four question types. When
+`types` is provided, the response schema's `type` enum is restricted to exactly those values —
+schema-level enforcement, not just a prompt suggestion.
 
 One flat body shape covers all three kinds — there is no per-task options union. `apiKey` travels
 in the JSON body, not a header. Each chunk already carries its own `pageStart`/`pageEnd`, so the

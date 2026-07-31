@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type { ChatMessage, Question, StoredDocument } from '@/domain/types';
-import { answerQuestion, generateQuestions } from '@/ai/client';
+import { answerQuestion, generateQuestions, type QuestionConfig } from '@/ai/client';
 import { useSettings } from './use-settings';
 
 /*
@@ -13,8 +13,8 @@ export function useGenerateQuestions() {
   const { settings } = useSettings();
 
   return useCallback(
-    (doc: StoredDocument, count: number): Promise<Question[]> =>
-      generateQuestions(doc, count, { apiKey: settings.userApiKey }),
+    (doc: StoredDocument, count: number, config: QuestionConfig = {}): Promise<Question[]> =>
+      generateQuestions(doc, count, config, { apiKey: settings.userApiKey }),
     [settings.userApiKey],
   );
 }
