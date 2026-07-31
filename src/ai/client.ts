@@ -36,6 +36,35 @@ const MAX_REQUEST_CHARS = 24_000;
 /* Enough delay that progress states are real rather than theatre, short enough not to annoy. */
 const THINKING_MS = 900;
 
+/* Mock mode used to cover only the happy path, so the quota wall and the failure states could
+   not be seen without real credentials and a spent quota. VITE_MOCK_FAILURE makes each of them
+   reachable on demand. Read per call rather than at module load so a test can vary it. */
+const FAILURE_CODES = [
+  'QUOTA_EXCEEDED',
+  'SERVICE_DISABLED',
+  'SERVICE_UNAVAILABLE',
+  'PROVIDER_ERROR',
+  'TEXT_TOO_LARGE',
+] as const;
+
+function mockFailure(): void {
+  const code = import.meta.env.VITE_MOCK_FAILURE;
+  if (!code || code === 'UNGROUNDED') return;
+  /* An unrecognised value is a typo in someone's .env, not a request for a mystery error. */
+  if (!(FAILURE_CODES as readonly string[]).includes(code)) {
+    throw new Error(
+      `Unknown VITE_MOCK_FAILURE: ${code}. Expected one of ${FAILURE_CODES.join(', ')}`,
+    );
+  }
+  throw new ProxyError(code);
+}
+
+/* Every item failing the server's citation check is the one failure that returns 200 with an
+   empty result rather than an error, so the UI path it exercises is a different one. */
+function mockReturnsUngrounded(): boolean {
+  return import.meta.env.VITE_MOCK_FAILURE === 'UNGROUNDED';
+}
+
 function wait(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(resolve, ms);
@@ -61,7 +90,12 @@ interface ProxyChunk {
 }
 
 function toProxyChunks(chunks: TextChunk[]): ProxyChunk[] {
-  return chunks.map((c) => ({ id: c.id, text: c.text, pageStart: c.pageStart, pageEnd: c.pageEnd }));
+  return chunks.map((c) => ({
+    id: c.id,
+    text: c.text,
+    pageStart: c.pageStart,
+    pageEnd: c.pageEnd,
+  }));
 }
 
 async function callProxy(
@@ -76,7 +110,8 @@ async function callProxy(
   });
 
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new ProxyError(typeof data.error === 'string' ? data.error : 'PROVIDER_ERROR');
+  if (!response.ok)
+    throw new ProxyError(typeof data.error === 'string' ? data.error : 'PROVIDER_ERROR');
   return data;
 }
 
@@ -88,7 +123,13 @@ interface ProxyCitation {
 }
 
 function toCitation(documentId: string, c: ProxyCitation): Citation {
-  return { documentId, chunkId: c.chunkId, pageStart: c.pageStart, pageEnd: c.pageEnd, quote: c.quote };
+  return {
+    documentId,
+    chunkId: c.chunkId,
+    pageStart: c.pageStart,
+    pageEnd: c.pageEnd,
+    quote: c.quote,
+  };
 }
 
 interface ProxyQuestionItem {
@@ -164,11 +205,14 @@ export async function generateQuestions(
 ): Promise<Question[]> {
   if (doc.id === MOCK_DOC_ID) {
     await wait(THINKING_MS, options.signal);
-    return mockQuestions.slice(0, count);
+    mockFailure();
+    return mockReturnsUngrounded() ? [] : mockQuestions.slice(0, count);
   }
 
   if (IS_MOCK_MODE) {
     await wait(THINKING_MS, options.signal);
+    mockFailure();
+    if (mockReturnsUngrounded()) return [];
     const generated = generateQuestionsFromChunks(doc.id, doc.chunks, count);
     if (generated.length === 0) throw new Error('No usable passages');
     return generated;
@@ -195,11 +239,16 @@ export async function generateCards(
 ): Promise<Card[]> {
   if (doc.id === MOCK_DOC_ID) {
     await wait(THINKING_MS, options.signal);
-    return mockCards.slice(0, count).map((card) => ({ ...card, deckId }));
+    mockFailure();
+    return mockReturnsUngrounded()
+      ? []
+      : mockCards.slice(0, count).map((card) => ({ ...card, deckId }));
   }
 
   if (IS_MOCK_MODE) {
     await wait(THINKING_MS, options.signal);
+    mockFailure();
+    if (mockReturnsUngrounded()) return [];
     return generateCardsFromChunks(doc.id, deckId, doc.chunks, count);
   }
 
@@ -244,8 +293,9 @@ export async function answerQuestion(
   }
 
   await wait(THINKING_MS, options.signal);
+  mockFailure();
 
-  const scored = bm25Rank(doc.chunks, question, 2);
+  const scored = mockReturnsUngrounded() ? [] : bm25Rank(doc.chunks, question, 2);
 
   if (scored.length === 0) {
     return { content: '', citations: [] };

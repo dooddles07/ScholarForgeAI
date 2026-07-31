@@ -139,9 +139,21 @@ Three things this enables:
 
 Enabled by `IS_MOCK_MODE` (`VITE_MOCK_AI === 'true'`), an explicit opt-in rather than a property of
 the dev server — a `npm run dev` that could never reach the real pipeline hid integration breakage
-until deploy. **Today this covers only the happy path** —
-`src/ai/mock/` has no fixtures for a malformed response, a quota-exhausted error, or an ungrounded
-item. A real gap for testing error handling, not a documented design choice.
+until deploy.
+
+Failure states are reachable too, via `VITE_MOCK_FAILURE`. Without it the mock path only ever
+succeeded, so the quota wall and the error screens could not be seen without real credentials and a
+genuinely spent quota:
+
+| Value | Behaviour |
+|---|---|
+| `QUOTA_EXCEEDED`, `SERVICE_DISABLED`, `SERVICE_UNAVAILABLE` | Throws a `ProxyError`, which `generation-error.ts` maps to the quota message |
+| `PROVIDER_ERROR`, `TEXT_TOO_LARGE` | Throws a `ProxyError`, which maps to the generic message |
+| `UNGROUNDED` | Succeeds and returns nothing, as if every item failed the server's citation check — a different UI path from an error |
+| unset | The happy path |
+
+An unrecognised value throws immediately with the list of valid ones, rather than producing some
+unexplained failure from a typo in a `.env`. Covered by `src/ai/client.test.ts`.
 
 ## Cost control
 

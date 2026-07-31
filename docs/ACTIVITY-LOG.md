@@ -49,8 +49,10 @@ A test pass followed. `persistence/settings.ts`, `persistence/settings-sync.ts`,
 
 Then the server side, which had **no tests at all** — including the grounding filter, the property [CLAUDE.md](../CLAUDE.md) describes as the core safety guarantee. The filter was inline in the request handler and untestable without one, so it moved to `api/_lib/grounding.ts` as pure functions (`groundedCitation`, `groundItems`, `groundChat`) and `api/generate.ts` now calls them. 18 tests cover it and `api/_lib/security.ts`: ungrounded items dropped, page numbers always taken from our own chunk data rather than a model claim, chat content discarded when no citation survives, the origin check's unset-means-open behaviour, and IP hashing being stable, salted, and irreversible.
 
+Last, the mock-mode gap [AI-INTEGRATION.md](03-ARCHITECTURE/AI-INTEGRATION.md) had flagged as real: fixtures covered only the happy path, so the quota wall and the error screens could not be seen without real credentials and a genuinely spent quota. Added `VITE_MOCK_FAILURE`, which forces any of the proxy error codes, plus an `UNGROUNDED` value that succeeds and returns nothing — the case where every item fails the server's citation check, which is a 200 with an empty result and therefore a different UI path from an error. A misspelled value throws with the list of valid ones rather than failing obscurely. Seven tests in `src/ai/client.test.ts`, and the doc's "covers only the happy path" caveat is now a table of what each value does.
+
 **Next action**
-Nothing outstanding. Remaining known gap, unchanged and pre-existing: `src/ai/mock/` has no fixtures for a malformed response, quota exhaustion, or an ungrounded item, so those error paths cannot be exercised in mock mode.
+Nothing outstanding.
 
 **Blockers**
 None.
