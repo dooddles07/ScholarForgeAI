@@ -1,9 +1,41 @@
 # Activity Log
 
 Purpose: running record of work done, decisions made, and where things stand. Read this first if you lose context.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Newest entries at the top.
+
+---
+
+## 2026-07-31 — Optional cloud sync feature complete: Firebase Auth + Firestore
+
+**Done**
+- **Tasks 1–6 combined:** Built the full optional cloud sync feature per [ADR-0010](08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md). Feature is entirely opt-in and has zero impact on users who never sign in.
+  - Firebase Auth initialization and provider setup (`src/lib/firebase.ts`, `initFirebase`, `getFirebaseApp`). Public config values are injected via environment variables at build time; no credentials ever enter the client bundle.
+  - Firestore Realtime Database reader (`src/persistence/sync.ts`, `readSyncPayload`, `writeSyncPayload`) and backup-restore flow: when a user signs in on a new device, the app checks Firestore for a backup from another device signed into the same account. If found, it offers to restore it via a merge operation that imports everything without deleting any existing local data.
+  - Settings page (`src/ui/pages/SettingsPage.tsx`) wired to sign in/out via Google, manually trigger sync-now on demand, and import a backup file via a file picker.
+  - Sync endpoint API (`api/_lib/sync-payload.ts`, `POST /api/sync`) that handles signed-in requests from the client, verifies the caller's identity via Firebase ID token, and reads/writes to Firestore.
+  - Backup merge logic ensures sign-out never deletes locally-stored documents, quizzes, or cards — the user's device-local work is always safe.
+  - Database security rules (`firestore.rules`): locked to authenticated users only; each user can read and write only their own document under `users/{uid}/backup`. Deny everything else.
+- **Task 7 (this task):** Verification only, no code changes.
+  - Full local check: `npm run typecheck && npm run lint && npm test && npm run build` — all pass. TypeScript strict mode, 41 unit tests across 9 test files, build 5.78s.
+  - Bundle isolation confirmed via `grep -rl "firebase" dist/assets/index-*.js` — no matches. Firebase and all its dependencies are in `dist/assets/firebase-BlHV8pKt.js` (502.87 KB raw, 132.39 KB gzipped), a separate lazy-loaded chunk. The main app entry chunk (`index-DjV_JkrW.js`, 271.29 KB raw, 87.90 KB gzipped) carries zero Firebase code and stays under the 300 KB gzip budget.
+
+**Manual end-to-end test (still owed)**
+The following verification requires a real Firebase project with Google OAuth configured, which does not exist in this environment — it is the user's own follow-up step:
+- Two browser profiles or windows signed into the same Google account
+- Profile A: upload a document, generate a quiz, sign in, tap "Sync now"
+- Profile B: sign in with the same Google account, restore the backup from Profile A
+- Profile B: confirm document and quiz appear in the library
+- Profile B: sign out, confirm local data remains (sign-out deletes nothing)
+- Either profile: reload with zero sign-in, confirm the app is fully usable offline with no account UI
+
+For setup steps, see [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md)'s "Turning on cloud sync" section and review the `firestore.rules` security policy at the repo root.
+
+**Verified**
+- Typecheck (app + `api/` folder), lint, full test suite (41 tests), and build all green.
+- Bundle isolation: Firebase in a separate lazy chunk, not in the main entry point.
+- Accessibility and CSP unchanged from prior verification.
 
 ---
 
