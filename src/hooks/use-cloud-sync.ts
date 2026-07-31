@@ -50,6 +50,7 @@ export function useCloudSync() {
           try {
             const { pullBackupFromCloud } = await import('@/persistence/sync');
             const backup = await pullBackupFromCloud(user.uid);
+            if (cancelled) return;
             if (backup) {
               foundBackupRef.current = backup;
               setStatus('backupFound');
@@ -57,6 +58,7 @@ export function useCloudSync() {
               setStatus('signedIn');
             }
           } catch {
+            if (cancelled) return;
             setStatus('signedIn');
           }
         })();
