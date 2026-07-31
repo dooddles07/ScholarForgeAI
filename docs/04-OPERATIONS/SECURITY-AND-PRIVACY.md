@@ -134,7 +134,7 @@ script-src 'self' https://apis.google.com;
 style-src 'self' 'unsafe-inline';
 img-src 'self' data: blob:;
 font-src 'self';
-connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com;
+connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://apis.google.com;
 frame-src https://*.firebaseapp.com;
 worker-src 'self' blob:;
 frame-ancestors 'none';
@@ -144,7 +144,7 @@ form-action 'none';
 
 (This is the actual header in `vercel.json`, which is the source of truth if the two ever drift. See [DEPLOYMENT.md](DEPLOYMENT.md)'s "Turning on cloud sync" section for why `connect-src`, `script-src`, and `frame-src` carry Firebase entries.)
 
-`style-src 'unsafe-inline'` is required by Tailwind's runtime style injection. `worker-src blob:` is required by the parsing worker. `connect-src` is restricted to our own origin, Firebase's Auth/Firestore origins (only reached if a user opts into cloud sync), and the AI provider is proxied server-side rather than called from the browser at all — which means exfiltration to any other third party is blocked by the browser even if something else went wrong. `script-src`'s `https://apis.google.com` and `frame-src`'s `https://*.firebaseapp.com` are both required by Firebase Auth's redirect sign-in flow; see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md)'s Consequences section for the tradeoff this represents.
+`style-src 'unsafe-inline'` is required by Tailwind's runtime style injection. `worker-src blob:` is required by the parsing worker. `connect-src` is restricted to our own origin, Firebase's Auth/Firestore origins (only reached if a user opts into cloud sync), and `https://apis.google.com` (the `gapi` script's own network calls during sign-in — omitting this blocks the redirect flow entirely, discovered live in production). The AI provider is proxied server-side rather than called from the browser at all — which means exfiltration to any other third party is blocked by the browser even if something else went wrong. `script-src`'s `https://apis.google.com` and `frame-src`'s `https://*.firebaseapp.com` are both required by Firebase Auth's redirect sign-in flow; see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md)'s Consequences section for the tradeoff this represents.
 
 `form-action 'none'` because the app submits no forms anywhere.
 
