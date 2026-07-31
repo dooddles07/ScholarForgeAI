@@ -7,6 +7,27 @@ Newest entries at the top.
 
 ---
 
+## 2026-07-31 — Final whole-branch review fix wave: CSP, service worker, hook error handling, offline UI, docs
+
+**Done**
+A final whole-branch review of the completed optional cloud sync feature (all 7 tasks below had already passed individual review) caught seven cross-task integration problems only visible with the whole feature assembled. Fixed all of them:
+
+- **CSP blocked Firebase (Critical).** `vercel.json`'s CSP had no allowance for Firebase's origins, so Auth (redirect flow) and Firestore could not function in production. Added `https://identitytoolkit.googleapis.com`, `https://securetoken.googleapis.com`, `https://firestore.googleapis.com` to `connect-src`; `https://apis.google.com` to `script-src`; `https://*.firebaseapp.com` to a new `frame-src`. Recorded the tradeoff (a previously very tight CSP is now measurably relaxed for every visitor, not just signed-in ones) in [ADR-0010](08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md)'s Consequences section, and updated [SECURITY-AND-PRIVACY.md](04-OPERATIONS/SECURITY-AND-PRIVACY.md)'s CSP snippet to match.
+- **Service worker precached the 503 KB Firebase chunk for everyone (Critical).** `vite.config.ts`'s `globIgnores` excluded the pdf/jszip lazy chunks but missed the Firebase chunk. Added `'**/firebase-*.js'` to `globIgnores` and a matching `runtimeCaching` entry (`firebase-sdk` cache), alongside the existing `lazy-parsers` entry. Confirmed by rebuilding: the firebase chunk no longer appears in `dist/sw.js`'s precache manifest.
+- **No error handling on hook mount / signIn / restoreFoundBackup (Important).** `use-cloud-sync.ts`'s mount effect had no try/catch, so a failed dynamic import or `onAuthStateChanged` setup left `status` stuck at `'loading'` forever (a permanently empty Settings section). `signIn()` and `restoreFoundBackup()` could throw silently with no user feedback. All three now follow the same try/catch → `setStatus('error')` shape `syncNow()` already used.
+- **Offline handling was speced but never built (Important).** The spec called for disabling Sign in/Sync now while offline, using the existing `OfflineBanner.tsx` pattern. Added a matching `navigator.onLine` + `online`/`offline` hook inside `CloudSyncSection.tsx`, disabling those two buttons and showing the existing `offline` copy when offline.
+- **Security/privacy docs were now inaccurate (Important).** [SECURITY-AND-PRIVACY.md](04-OPERATIONS/SECURITY-AND-PRIVACY.md) claimed "no accounts, no user database," "data never leaves the device," and similar, all now false for a user who opts into cloud sync. Added "unless you opt into cloud sync" qualifiers throughout, added a Firestore row to the data-location table, and linked to ADR-0010. Added the six `VITE_FIREBASE_*` variables to [SELF-HOSTING-GUIDE.md](07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md)'s environment variable list (`.env.example` is the source of truth for the exact names); `ARCHITECTURE.md` does not enumerate environment variables beyond one inline mention of `GEMINI_API_KEY` in the system diagram, so no change was needed there.
+- **Deployment docs missing two required steps (Important).** [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md)'s "Turning on cloud sync" section was missing the Firebase Authorized-domains step (without it, sign-in fails with `auth/unauthorized-domain` on every new deployment URL — the most common Firebase-web setup mistake) and a note about the CSP requirement. Added both, plus a "known limitation" note that `signInWithRedirect` with the default `*.firebaseapp.com` authDomain can be degraded in browsers that block third-party storage access (Safari ITP, Firefox ETP) — a permanent property of choosing redirect over popup, not a bug.
+
+Deferred (Minor severity, out of scope for this wave): comment length in `firebase.ts`, the error-state UI not offering sign-out, `restoreFoundBackup` not setting `lastSyncedAt`, overlapping `onAuthStateChanged` firings, `isBackupPayload`'s partial validation, the CI bundle-check chunk-selection issue.
+
+**Verified**
+- `npm run typecheck && npm run lint && npm test && npm run build` all pass.
+- Rebuilt and confirmed `dist/sw.js` no longer lists the firebase chunk in its precache manifest.
+- `vercel.json`'s CSP string checked for valid JSON and correct `;`-separated directive syntax.
+
+---
+
 ## 2026-07-31 — Optional cloud sync feature complete: Firebase Auth + Firestore
 
 **Done**
@@ -35,7 +56,7 @@ For setup steps, see [DEPLOYMENT.md](04-OPERATIONS/DEPLOYMENT.md)'s "Turning on 
 **Verified**
 - Typecheck (app + `api/` folder), lint, full test suite (41 tests), and build all green.
 - Bundle isolation: Firebase in a separate lazy chunk, not in the main entry point.
-- No UI or CSP-related files were touched by this feature (Task 7 ran automated checks only).
+- No UI or CSP-related files were touched by this task (Task 7 ran automated checks only). **Update:** a later final-review pass (see the entry above, same date) found this feature could not actually work in production without CSP changes — `vercel.json` was updated then to allow Firebase's required origins.
 
 ---
 

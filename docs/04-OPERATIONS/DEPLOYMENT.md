@@ -100,10 +100,15 @@ Optional. The app works fully without this — see [ADR-0010](../08-DECISIONS/AD
 1. Create a free Firebase project at [console.firebase.google.com](https://console.firebase.google.com).
 2. Add a Web app to the project (Project settings → General → Your apps). Copy the six config values it gives you.
 3. Enable Google as a sign-in provider: Authentication → Sign-in method → Google → Enable.
-4. Create a Firestore database (production mode is fine — the rules below lock it down).
-5. Paste the contents of `firestore.rules` (repo root) into Firestore → Rules, and publish.
-6. In the Vercel dashboard, add the six `VITE_FIREBASE_*` variables from step 2 as environment variables (Plain, not Secret — these are public client config, not credentials, see `src/lib/firebase.ts`), for both Production and Preview.
-7. Redeploy. Sign-in should now work at `/app/settings`.
+4. **Add your deployment's domain to Firebase's Authorized domains:** Authentication → Settings → Authorized domains → Add domain. Add every domain you'll sign in from — the `<project>.vercel.app` domain, any Preview-deployment domain you test on, and a custom domain if you add one later. Skipping this is the most common Firebase-web setup mistake: sign-in fails with `auth/unauthorized-domain` on any domain not in this list, including a brand-new Preview URL for a PR.
+5. Create a Firestore database (production mode is fine — the rules below lock it down).
+6. Paste the contents of `firestore.rules` (repo root) into Firestore → Rules, and publish.
+7. In the Vercel dashboard, add the six `VITE_FIREBASE_*` variables from step 2 as environment variables (Plain, not Secret — these are public client config, not credentials, see `src/lib/firebase.ts`), for both Production and Preview.
+8. Redeploy. Sign-in should now work at `/app/settings`.
+
+**CSP:** Firebase Auth (redirect flow) and Firestore need their own origins allowed in the Content-Security-Policy header, or sign-in and sync will fail even with correct config and authorized domains. This repo's `vercel.json` already allows them (`connect-src` for Auth/token-refresh/Firestore, `script-src` for the `apis.google.com` redirect resolver, `frame-src` for `*.firebaseapp.com`) — nothing to do here unless you're diffing this deployment against a fork with a stricter CSP, in which case those entries must be present. See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md)'s Consequences section.
+
+**Known limitation:** `signInWithRedirect` with Firebase's default `*.firebaseapp.com` authDomain can be degraded or broken in browsers that block third-party storage access by default (Safari's Intelligent Tracking Prevention, Firefox's Enhanced Tracking Protection), because the redirect flow relies on a storage-access handoff through that domain. This is a permanent constraint of choosing redirect over popup (see ADR-0010's rationale), not a bug — worth knowing before relying on cloud sync working identically in every browser.
 
 ## Local development
 

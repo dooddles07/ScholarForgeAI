@@ -28,41 +28,46 @@ export function useCloudSync() {
     let cancelled = false;
 
     void (async () => {
-      const [{ firebaseAuth }, { onAuthStateChanged }] = await Promise.all([
-        import('@/lib/firebase'),
-        import('firebase/auth'),
-      ]);
-      if (cancelled) return;
+      try {
+        const [{ firebaseAuth }, { onAuthStateChanged }] = await Promise.all([
+          import('@/lib/firebase'),
+          import('firebase/auth'),
+        ]);
+        if (cancelled) return;
 
-      unsubscribe = onAuthStateChanged(firebaseAuth(), (user) => {
-        if (!user) {
-          uidRef.current = null;
-          setEmail(null);
-          setStatus('signedOut');
-          return;
-        }
+        unsubscribe = onAuthStateChanged(firebaseAuth(), (user) => {
+          if (!user) {
+            uidRef.current = null;
+            setEmail(null);
+            setStatus('signedOut');
+            return;
+          }
 
-        uidRef.current = user.uid;
-        setEmail(user.email);
-        setStatus('checkingBackup');
+          uidRef.current = user.uid;
+          setEmail(user.email);
+          setStatus('checkingBackup');
 
-        void (async () => {
-          try {
-            const { pullBackupFromCloud } = await import('@/persistence/sync');
-            const backup = await pullBackupFromCloud(user.uid);
-            if (cancelled) return;
-            if (backup) {
-              foundBackupRef.current = backup;
-              setStatus('backupFound');
-            } else {
+          void (async () => {
+            try {
+              const { pullBackupFromCloud } = await import('@/persistence/sync');
+              const backup = await pullBackupFromCloud(user.uid);
+              if (cancelled) return;
+              if (backup) {
+                foundBackupRef.current = backup;
+                setStatus('backupFound');
+              } else {
+                setStatus('signedIn');
+              }
+            } catch {
+              if (cancelled) return;
               setStatus('signedIn');
             }
-          } catch {
-            if (cancelled) return;
-            setStatus('signedIn');
-          }
-        })();
-      });
+          })();
+        });
+      } catch {
+        if (cancelled) return;
+        setStatus('error');
+      }
     })();
 
     return () => {
@@ -72,11 +77,15 @@ export function useCloudSync() {
   }, []);
 
   const signIn = useCallback(async () => {
-    const [{ firebaseAuth, googleProvider }, { signInWithRedirect }] = await Promise.all([
-      import('@/lib/firebase'),
-      import('firebase/auth'),
-    ]);
-    await signInWithRedirect(firebaseAuth(), googleProvider);
+    try {
+      const [{ firebaseAuth, googleProvider }, { signInWithRedirect }] = await Promise.all([
+        import('@/lib/firebase'),
+        import('firebase/auth'),
+      ]);
+      await signInWithRedirect(firebaseAuth(), googleProvider);
+    } catch {
+      setStatus('error');
+    }
   }, []);
 
   const signOut = useCallback(async () => {
@@ -89,9 +98,13 @@ export function useCloudSync() {
 
   const restoreFoundBackup = useCallback(async () => {
     if (!foundBackupRef.current) return;
-    await importBackup(foundBackupRef.current);
-    foundBackupRef.current = null;
-    setStatus('signedIn');
+    try {
+      await importBackup(foundBackupRef.current);
+      foundBackupRef.current = null;
+      setStatus('signedIn');
+    } catch {
+      setStatus('error');
+    }
   }, []);
 
   const dismissFoundBackup = useCallback(() => {

@@ -48,6 +48,7 @@ Chosen over Supabase specifically because Supabase's free tier pauses a project 
 
 - A second external service to operate (Firebase project, alongside Vercel, Upstash, Google AI Studio) — still zero-cost, but one more dashboard to know about.
 - Firestore's public client config key looks like a leaked secret to naive scanning (see the note in `.github/workflows/ci.yml`'s key-scan step) — anyone touching that CI step later needs to understand why it's still safe.
+- **The production CSP had to be relaxed for every visitor, not just signed-in ones.** `vercel.json`'s `connect-src` now allows `https://identitytoolkit.googleapis.com` (Auth), `https://securetoken.googleapis.com` (token refresh), and `https://firestore.googleapis.com` (Firestore reads/writes); `script-src` now allows `https://apis.google.com` (the `gapi` redirect resolver `signInWithRedirect` loads); `frame-src` now allows `https://*.firebaseapp.com` (Firebase's default authDomain, used during the auth redirect). This is a measurable widening of a previously very tight CSP that applies to the whole site's response headers, accepted because the redirect-flow Auth chosen above (see "Why", redirect over popup) requires it — there is no way to scope a CSP header to only signed-in requests. If a custom Firebase authDomain is ever configured instead of the default `*.firebaseapp.com`, the `frame-src` entry in `vercel.json` must be updated to match, or sign-in will fail.
 
 ## Revisit if
 

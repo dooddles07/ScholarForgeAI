@@ -30,11 +30,17 @@ export default defineConfig({
         /* App shell only. Generated content and the AI proxy are never cached, so a stale
            response can never stand in for a real answer. */
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-        /* The PDF worker and the pdf/jszip vendor chunks are lazily loaded on demand and are
-           large (the worker alone is well over a megabyte). Precaching them on every install
-           would defeat the point of lazy loading. They are cached at runtime instead, the first
-           time a document of that type is actually opened. */
-        globIgnores: ['**/pdf.worker.min-*.{js,mjs}', '**/pdf-*.js', '**/jszip.min-*.js'],
+        /* The PDF worker, the pdf/jszip vendor chunks, and the Firebase SDK chunk are lazily
+           loaded on demand and are large (the PDF worker alone is well over a megabyte; Firebase
+           is over 500 KB). Precaching them on every install would defeat the point of lazy
+           loading — most visitors never open a PDF or touch cloud sync. They are cached at
+           runtime instead, the first time they are actually used. */
+        globIgnores: [
+          '**/pdf.worker.min-*.{js,mjs}',
+          '**/pdf-*.js',
+          '**/jszip.min-*.js',
+          '**/firebase-*.js',
+        ],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
@@ -42,6 +48,14 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'lazy-parsers',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
+            },
+          },
+          {
+            urlPattern: /\/assets\/firebase-[^/]*\.js$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'firebase-sdk',
               expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },

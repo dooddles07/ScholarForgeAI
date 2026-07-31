@@ -80,6 +80,21 @@ Project Settings, Environment Variables. Set these for both Production and Previ
 
 Set `DAILY_GLOBAL_LIMIT` below your real limit so your users get a clear message from the app rather than an opaque error from the provider.
 
+### 5b. Optional: turn on cloud sync
+
+Only if you want it — the app works fully without it. Six more variables, all **Plain** (this is public client config, not a credential — see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) and `src/lib/firebase.ts`):
+
+| Variable | Type |
+|---|---|
+| `VITE_FIREBASE_API_KEY` | Plain |
+| `VITE_FIREBASE_AUTH_DOMAIN` | Plain |
+| `VITE_FIREBASE_PROJECT_ID` | Plain |
+| `VITE_FIREBASE_STORAGE_BUCKET` | Plain |
+| `VITE_FIREBASE_MESSAGING_SENDER_ID` | Plain |
+| `VITE_FIREBASE_APP_ID` | Plain |
+
+Get these values, enable Google sign-in, and publish `firestore.rules` per [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md)'s "Turning on cloud sync" section — the steps are the same for a fork as for the original deployment.
+
 ### 6. Deploy
 
 Push to `main`, or trigger a deployment from the dashboard. Your instance is live at `<project>.vercel.app`.
