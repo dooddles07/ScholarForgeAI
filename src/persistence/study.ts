@@ -1,13 +1,5 @@
-import type { Attempt, Card, Conversation, Deck, Exam, Quiz, ReviewLogEntry } from '@/domain/types';
+import type { Attempt, Card, Conversation, Deck, Exam, ReviewLogEntry } from '@/domain/types';
 import { db } from './db';
-
-export function saveQuiz(quiz: Quiz): Promise<string> {
-  return db.quizzes.put(quiz);
-}
-
-export function getQuiz(id: string): Promise<Quiz | undefined> {
-  return db.quizzes.get(id);
-}
 
 export function saveAttempt(attempt: Attempt): Promise<string> {
   return db.attempts.put(attempt);
