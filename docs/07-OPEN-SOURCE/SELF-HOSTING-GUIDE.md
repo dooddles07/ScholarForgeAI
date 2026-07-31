@@ -1,7 +1,7 @@
 # Self-Hosting Guide
 
 Purpose: run your own copy of ScholarForge AI, for free.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 ## Why you might want to
 
@@ -59,7 +59,9 @@ In the Vercel dashboard, import your forked repository.
 | Output directory | `dist` |
 | Node version | 20 |
 
-`api/generate.ts` deploys automatically as an Edge Function — no extra configuration.
+`api/generate.ts` deploys automatically as a Vercel Node Function (60s max duration on Hobby) — no
+extra configuration. It deliberately isn't an Edge Function: Vercel's Edge runtime has a hard 25s
+ceiling that this project hit in production before switching to Node.
 
 ### 5. Set the environment variables
 

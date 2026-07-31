@@ -1,7 +1,7 @@
 # Contributing
 
 Purpose: how to get set up and how to help.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Contributions are welcome, including from people who have never contributed to an open-source project before. That is a real audience for this project, not a courtesy.
 
@@ -39,8 +39,7 @@ npm run build        # production build
 npm run typecheck    # TypeScript
 npm run lint         # ESLint
 npm test             # unit tests
-npm run test:e2e     # Playwright
-npm run stats        # read the deployed quota counters
+node tests/e2e/axe-audit.mjs   # accessibility sweep, against a running preview build
 ```
 
 ## Read first
