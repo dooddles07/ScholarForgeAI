@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useCloudSync } from '@/hooks/use-cloud-sync';
 import { useSettings } from '@/hooks/use-settings';
 import { relativeTime } from '@/lib/format';
@@ -28,6 +29,14 @@ export function CloudSyncSection() {
     useCloudSync();
   const { settings } = useSettings();
   const isOffline = useIsOffline();
+  const navigate = useNavigate();
+
+  /* Every /app route is gated, so staying put after sign-out just shows the gate. Send them to
+     the landing page instead. */
+  async function handleSignOut() {
+    await signOut();
+    void navigate('/', { replace: true });
+  }
 
   if (status === 'loading') return null;
 
@@ -81,7 +90,7 @@ export function CloudSyncSection() {
           <Button variant="secondary" onClick={() => void syncNow()}>
             {copy.syncNow}
           </Button>
-          <Button variant="ghost" onClick={() => void signOut()}>
+          <Button variant="ghost" onClick={() => void handleSignOut()}>
             {copy.syncSignOut}
           </Button>
         </div>
@@ -107,7 +116,7 @@ export function CloudSyncSection() {
         >
           {status === 'syncing' ? copy.syncing : copy.syncNow}
         </Button>
-        <Button variant="ghost" onClick={() => void signOut()}>
+        <Button variant="ghost" onClick={() => void handleSignOut()}>
           {copy.syncSignOut}
         </Button>
       </div>
