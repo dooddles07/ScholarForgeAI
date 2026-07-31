@@ -7,8 +7,8 @@ import { generateCardsFromChunks, generateQuestionsFromChunks } from './mock/gen
 
 /*
  * The single seam between the app and generation. In dev it serves fixtures, so a contributor
- * never needs credentials. In a real build it calls the Cloudflare... no, Vercel proxy at
- * /api/generate. No component above this file knows the difference.
+ * never needs credentials. In a real build it calls the Vercel proxy at /api/generate. No
+ * component above this file knows the difference.
  */
 
 export interface GenerateOptions {

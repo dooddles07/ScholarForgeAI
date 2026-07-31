@@ -91,9 +91,9 @@ export const cost = {
   tableCaption: 'Every service in the stack, and what it costs',
   columns: ['What it does', 'Service', 'Free tier', 'Cost'],
   rows: [
-    ['Hosting', 'Cloudflare Pages', 'Unlimited bandwidth, 500 builds a month', '$0'],
-    ['AI proxy', 'Cloudflare Functions', 'About 100,000 requests a day', '$0'],
-    ['Quota counters', 'Workers KV', 'Free daily read and write allowance', '$0'],
+    ['Hosting', 'Vercel Hobby', '100GB bandwidth a month', '$0'],
+    ['AI proxy', 'Vercel Serverless Functions', 'Generous free execution allowance', '$0'],
+    ['Quota counters', 'Upstash Redis', '10,000 commands a day', '$0'],
     ['Generation', 'Google Gemini', 'Free tier, no card required', '$0'],
     ['Code and CI', 'GitHub', 'Free for public repositories', '$0'],
     ['Your data', 'Your own browser', 'Whatever your disk allows', '$0'],
