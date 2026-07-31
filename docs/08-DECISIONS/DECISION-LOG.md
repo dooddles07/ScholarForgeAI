@@ -18,6 +18,7 @@ An ADR captures one decision: what we chose, what we rejected, and why. ADRs are
 | [ADR-0007](ADR-0007-PWA-OVER-NATIVE.md) | Ship an installable PWA rather than native apps | Accepted | 2026-07-30 |
 | [ADR-0008](ADR-0008-TWO-VISUAL-REGISTERS.md) | Expressive marketing page, calm app, one codebase | Accepted | 2026-07-30 |
 | [ADR-0009](ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) | Host on Vercel rather than Cloudflare Pages | Accepted | 2026-07-30 |
+| [ADR-0010](ADR-0010-OPTIONAL-CLOUD-SYNC.md) | Optional cloud sync via Firebase, additive to local-first | Accepted | 2026-07-31 |
 
 ## Format
 

@@ -31,6 +31,9 @@ jobs:
 
       # The point of the proxy is that the key never reaches a browser. Prove it every build.
       - name: Scan the bundle for key-shaped strings
+        # This intentionally does not need updating for Firebase's client config key: CI never
+        # sets VITE_FIREBASE_API_KEY, so Vite bakes in `undefined`, not a real "AIza..." string,
+        # and this check never sees one. GEMINI_API_KEY is the one this check exists to catch.
         run: |
           if grep -rEq 'AIza[0-9A-Za-z_-]{35}|sk-[0-9A-Za-z]{20,}' dist/; then
             echo "A key-shaped string is present in the build output."

@@ -93,6 +93,18 @@ The bundle key check matters most. Search the actual deployed JavaScript, not by
 
 Preview deployments get their own environment variables. Give them a **separate, lower-limit key** if possible, so a preview cannot exhaust production's quota. If only one key is available, set `DAILY_GLOBAL_LIMIT` low on Preview.
 
+## Turning on cloud sync
+
+Optional. The app works fully without this — see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md).
+
+1. Create a free Firebase project at [console.firebase.google.com](https://console.firebase.google.com).
+2. Add a Web app to the project (Project settings → General → Your apps). Copy the six config values it gives you.
+3. Enable Google as a sign-in provider: Authentication → Sign-in method → Google → Enable.
+4. Create a Firestore database (production mode is fine — the rules below lock it down).
+5. Paste the contents of `firestore.rules` (repo root) into Firestore → Rules, and publish.
+6. In the Vercel dashboard, add the six `VITE_FIREBASE_*` variables from step 2 as environment variables (Plain, not Secret — these are public client config, not credentials, see `src/lib/firebase.ts`), for both Production and Preview.
+7. Redeploy. Sign-in should now work at `/app/settings`.
+
 ## Local development
 
 ```bash
