@@ -1,7 +1,7 @@
 # Zero-Cost Infrastructure
 
 Purpose: prove the whole thing runs at $0, name every limit, and state what degrades at each one.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 **Rule for this document:** every entry names the service, the specific limit, and what happens when that limit is reached. "It's free" is not an acceptable entry.
 
@@ -13,9 +13,11 @@ Last updated: 2026-07-30
 
 | Service | Purpose | Free tier | Behaviour at the limit |
 |---|---|---|---|
-| Cloudflare Pages | Static hosting | Unlimited bandwidth, unlimited sites, 500 builds/month, commercial use permitted | Builds beyond 500 queue until the next month; the live site keeps serving |
-| Cloudflare Pages Functions | AI proxy | Approx. 100,000 requests/day | Requests beyond the cap fail; the static app still loads and offline features still work |
-| Cloudflare Workers KV | Quota counters | Free daily read/write allowance | Counter writes fail; we fail closed and disable shared-key generation rather than allow unlimited use |
+| Vercel Hobby | Static hosting | No included bandwidth allowance beyond a soft fair-use cap; commercial use prohibited; builds pause the project at the cap | Deploys stop until the next billing cycle or a plan upgrade; accepted risk for this portfolio project, see [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) |
+| Vercel Node Functions | AI proxy (`api/generate.ts`) | Included in Hobby; 60s max execution per invocation, generous monthly invocation allowance | Requests beyond the cap fail with a platform error; the static app still loads and offline features still work |
+| Upstash Redis | Quota counters, kill switch | 256 MB storage, 500K commands/month, 10 GB bandwidth/month (free tier) | Counter writes fail; `api/_lib/quota.ts` fails closed and disables shared-key generation rather than allow unlimited use |
+| Firebase Authentication | Google sign-in | Free, no cap reachable at this project's scale | N/A at this scale |
+| Cloud Firestore (Spark plan) | Optional cloud sync backup (`backups/{uid}`) | 50K reads / 20K writes / 20K deletes per day, no inactivity pause | Sync fails with an honest inline error; local IndexedDB data is completely unaffected, see [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md) |
 | Google Gemini API | Generation | Free tier, no credit card. Per-model RPM and RPD caps. Daily reset at 00:00 Pacific. | Provider returns 429; we surface an honest message with the reset time and offer bring-your-own-key |
 | GitHub | Repository, issues, releases | Free, unlimited for public repositories | None reachable |
 | GitHub Actions | CI | 2,000 minutes/month for public repos | Actually unlimited for public repositories; our usage is trivial regardless |
@@ -69,7 +71,7 @@ That is the whole reason the escape hatch exists. See [ADR-0002](../08-DECISIONS
 | PDF generation library | Browser print-to-PDF | Bundle weight and any service cost |
 | Text-to-speech service | Web Speech API | All TTS cost |
 | Analytics platform | No analytics | All analytics cost |
-| CDN | Included with Cloudflare Pages | All CDN cost |
+| CDN | Included with Vercel Hobby | All CDN cost |
 | Error monitoring service | Aggregate counters only | All monitoring cost |
 | Webfonts | System font stack | Bandwidth and a layout-shift problem |
 
@@ -81,14 +83,15 @@ The two largest savings are client-side parsing ([ADR-0005](../08-DECISIONS/ADR-
 
 | Option | Cost | Rejected because |
 |---|---|---|
-| Vercel Hobby | $0, but prohibits commercial use and pauses at the bandwidth cap | Pausing during exam season is unacceptable, and the prohibition would burden everyone who forks the project. [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md) |
 | Supabase | $0 tier, but pauses after 7 idle days | Study traffic is seasonal, so the pause would trigger exactly when a student returns. [ADR-0001](../08-DECISIONS/ADR-0001-LOCAL-FIRST-STORAGE.md) |
 | OpenAI or Anthropic APIs | No permanent free tier | Fails the constraint outright |
 | Pinecone or similar | Free tier exists, but we need no vectors | Unnecessary dependency |
 | Google Play developer account | One-time fee | Breaks zero cost. [ADR-0007](../08-DECISIONS/ADR-0007-PWA-OVER-NATIVE.md) |
 | Apple Developer account | Annual fee | Breaks zero cost, and recurring means the project goes dark the year nobody pays |
-| A custom domain | Annual fee | Optional. `pages.dev` subdomain is free. If a domain is ever donated, fine. |
+| A custom domain | Annual fee | Optional. The `*.vercel.app` subdomain is free. If a domain is ever donated, fine. |
 | Sentry or similar | Free tier exists | Conflicts with the no-tracking commitment |
+
+Vercel Hobby's commercial-use prohibition and pause-at-cap behaviour were the reason it was originally rejected in favour of Cloudflare Pages ([ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md)). [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md) later reversed that call for familiarity/workflow reasons, accepting both risks explicitly since this is a solo portfolio project rather than one inviting third-party forks to self-host at scale.
 
 ## Fallback plans
 
@@ -97,8 +100,9 @@ What we do if a free tier disappears or degrades.
 | If this happens | Then |
 |---|---|
 | Gemini free tier ends or shrinks badly | Switch the default to OpenRouter free models, and promote bring-your-own-key from escape hatch to primary path. The provider is behind one module, so this is a contained change. |
-| Cloudflare Pages changes its terms | Move to Netlify or Cloudflare's paid $5 tier. Static output plus one function is portable to almost anything. |
-| Workers KV becomes unavailable | Rate limiting degrades to in-memory per-instance counters, which is weaker but functional; or shared-key generation is disabled and BYOK becomes required. |
+| Vercel changes its terms | Move to Netlify or Cloudflare Pages. Static output plus one Node function is portable to almost anything. |
+| Upstash Redis becomes unavailable | Rate limiting degrades to in-memory per-instance counters, which is weaker but functional; or shared-key generation is disabled and BYOK becomes required. |
+| Firestore becomes unavailable | Cloud sync fails or is disabled; every local-only feature — review, quizzes, exams, exports, dashboard — keeps working, since sync is additive, not load-bearing. See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md). |
 | All free AI tiers disappear | The product becomes bring-your-own-key only. Every non-AI feature — review, saved quizzes, exams, exports, dashboard — continues working. |
 
 The architecture is deliberately arranged so that losing the AI provider degrades the product rather than killing it. Everything already generated is stored locally and keeps working.
@@ -109,12 +113,14 @@ Someone forking the project needs:
 
 | Requirement | Cost |
 |---|---|
-| A Cloudflare account | Free |
+| A Vercel account | Free |
+| An Upstash account | Free |
 | A Google AI Studio API key | Free |
+| A Firebase project | Optional; only needed for cloud sync |
 | A GitHub account | Free |
-| A domain | Optional; `pages.dev` is free |
+| A domain | Optional; `*.vercel.app` is free |
 
-**Total: $0.** No licensing trap, since every dependency is permissively licensed and Cloudflare permits commercial use. Steps in [SELF-HOSTING-GUIDE.md](../07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md).
+**Total: $0.** No licensing trap, since every dependency is permissively licensed. Commercial use is against Vercel Hobby's terms, though — a self-hoster building on top of this for a commercial product needs Vercel Pro or another host. Steps in [SELF-HOSTING-GUIDE.md](../07-OPEN-SOURCE/SELF-HOSTING-GUIDE.md).
 
 ## Verification
 
@@ -123,7 +129,7 @@ Before each release, per [DEFINITION-OF-DONE.md](../05-ENGINEERING/DEFINITION-OF
 1. Every dependency in [TECH-STACK.md](../03-ARCHITECTURE/TECH-STACK.md) appears in the table above, or is a free npm package
 2. No new service has been added without a row here naming its limit and its degradation
 3. `npx license-checker --summary` shows only permissive licences
-4. The Cloudflare dashboard shows $0
+4. The Vercel, Upstash, and Firebase dashboards show $0
 5. The Gemini global ceiling matches Google's current published limit
 
 ## Standing commitment
