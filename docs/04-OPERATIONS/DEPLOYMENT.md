@@ -1,7 +1,7 @@
 # Deployment
 
 Purpose: how to get this running on Vercel, real AI generation included.
-Last updated: 2026-07-30
+Last updated: 2026-07-31
 
 Host choice rationale in [ADR-0009](../08-DECISIONS/ADR-0009-VERCEL-OVER-CLOUDFLARE-PAGES.md), which supersedes [ADR-0003](../08-DECISIONS/ADR-0003-CLOUDFLARE-PAGES-OVER-VERCEL.md). Shared-key proxy design in [ADR-0002](../08-DECISIONS/ADR-0002-SHARED-KEY-BEHIND-PROXY.md) and [RATE-LIMITING-AND-ABUSE.md](RATE-LIMITING-AND-ABUSE.md).
 
@@ -44,7 +44,7 @@ In the Vercel dashboard, import the GitHub repository, then confirm:
 | Output directory | `dist` |
 | Node version | 20 |
 
-`api/generate.ts` is detected and deployed automatically as an Edge Function — no extra configuration.
+`api/generate.ts` is detected and deployed automatically as a Vercel Node Function (60s max duration on Hobby) — no extra configuration. It deliberately isn't an Edge Function: Vercel's Edge runtime has a hard 25s ceiling that this project hit in production before switching to Node.
 
 ### 4. Set environment variables
 
@@ -104,11 +104,25 @@ Optional. The app works fully without this — see [ADR-0010](../08-DECISIONS/AD
 5. Create a Firestore database (production mode is fine — the rules below lock it down).
 6. Paste the contents of `firestore.rules` (repo root) into Firestore → Rules, and publish.
 7. In the Vercel dashboard, add the six `VITE_FIREBASE_*` variables from step 2 as environment variables (Plain, not Secret — these are public client config, not credentials, see `src/lib/firebase.ts`), for both Production and Preview.
-8. Redeploy. Sign-in should now work at `/app/settings`.
+8. **Provision Firebase's auth handler by deploying once to Firebase Hosting** (see below). Skipping this breaks sign-in.
+9. Redeploy on Vercel. Sign-in should now work.
 
-**CSP:** Firebase Auth (redirect flow) and Firestore need their own origins allowed in the Content-Security-Policy header, or sign-in and sync will fail even with correct config and authorized domains. This repo's `vercel.json` already allows them (`connect-src` for Auth/token-refresh/Firestore, `script-src` for the `apis.google.com` redirect resolver, `frame-src` for `*.firebaseapp.com`) — nothing to do here unless you're diffing this deployment against a fork with a stricter CSP, in which case those entries must be present. See [ADR-0010](../08-DECISIONS/ADR-0010-OPTIONAL-CLOUD-SYNC.md)'s Consequences section.
+### Provisioning the auth handler (step 8, required)
 
-**Known limitation:** `signInWithRedirect` with Firebase's default `*.firebaseapp.com` authDomain can be degraded or broken in browsers that block third-party storage access by default (Safari's Intelligent Tracking Prevention, Firefox's Enhanced Tracking Protection), because the redirect flow relies on a storage-access handoff through that domain. This is a permanent constraint of choosing redirect over popup (see ADR-0010's rationale), not a bug — worth knowing before relying on cloud sync working identically in every browser.
+Firebase serves its sign-in helper at `https://<project>.firebaseapp.com/__/auth/handler`, and only provisions that path once *something* has been deployed to Firebase Hosting for the project. Because this app is served from Vercel, Hosting is otherwise never initialized, so those paths 404 and sign-in fails with no useful error. One-time fix, from the repo root:
+
+```bash
+npm install -g firebase-tools
+firebase login
+firebase init hosting     # pick your project; any empty public dir (e.g. firebase-public); no to SPA rewrite and GitHub deploys
+firebase deploy --only hosting
+```
+
+This deploys a placeholder page nobody visits. The app itself still ships from Vercel — Firebase Hosting exists here purely to make the auth handler reachable. Do not delete that Hosting site later; sign-in depends on it. The `firebase.json`, `.firebaserc`, and `firebase-public/` files this creates are committed so the step is reproducible.
+
+**CSP:** Firebase Auth and Firestore need their own origins allowed in the Content-Security-Policy header, or sign-in and sync fail even with correct config and authorized domains. This repo's `vercel.json` already allows the full set — nothing to do unless you're diffing against a fork with a stricter CSP, in which case see [SECURITY-AND-PRIVACY.md](SECURITY-AND-PRIVACY.md)'s CSP section for exactly which entries are required and why. `vercel.json` also sets `Cross-Origin-Opener-Policy: same-origin-allow-popups`; without it the browser severs the popup's opener relationship and the console fills with `window.closed` errors during sign-in.
+
+**Sign-in uses a popup, not a redirect** ([ADR-0012](../08-DECISIONS/ADR-0012-POPUP-SIGN-IN-OVER-REDIRECT.md)). The redirect flow was tried first and fails outright in Chrome: it hands the session off through the cross-site `*.firebaseapp.com` authDomain, which browsers now block as third-party storage, returning the user to the app still signed out with no error shown. **Not yet verified on a real phone** — mobile popup behaviour is the most likely place this breaks, and ADR-0012 records the fallback if it does.
 
 ## Local development
 
