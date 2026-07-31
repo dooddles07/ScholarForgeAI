@@ -135,6 +135,13 @@ export const exam = {
   regenerate: 'Rewrite this question',
 } as const;
 
+export const authGate = {
+  heading: 'Sign in to continue',
+  body: 'ScholarForge AI needs a free Google sign-in so your documents, quizzes, and cards stay tied to your account.',
+  signIn: 'Sign in with Google',
+  error: 'Sign-in did not go through. Please try again.',
+} as const;
+
 export const offline = {
   banner: 'You are offline. Cards, saved quizzes, and exams all still work.',
   disabledAction: 'Needs a connection',
