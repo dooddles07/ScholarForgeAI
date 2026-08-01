@@ -2,12 +2,11 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { Section } from './Section';
 import { output } from '@/copy/marketing';
-import { CardSample, ExamSample, ExplanationSample, QuizSample } from './output-samples';
+import { CardSample, ExamSample, QuizSample } from './output-samples';
 
 const samples: ReactNode[] = [
   <QuizSample key="quiz" />,
   <CardSample key="cards" />,
-  <ExplanationSample key="explain" />,
   <ExamSample key="exam" />,
 ];
 

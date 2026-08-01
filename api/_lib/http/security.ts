@@ -11,9 +11,12 @@ export function clientIp(forwardedFor: string | undefined): string {
   return forwardedFor?.split(',')[0]?.trim() ?? 'unknown';
 }
 
-/* The IP is hashed with a server-only salt so the quota key never holds a plain address. */
+/* The IP is hashed with a server-only salt so the quota key never holds a plain address. An
+   unset salt would make the hash reversible via a rainbow table over the whole IPv4 space, so
+   this fails closed rather than silently hashing with an empty salt. */
 export async function hashIp(ip: string): Promise<string> {
-  const salt = process.env.IP_HASH_SALT ?? '';
+  const salt = process.env.IP_HASH_SALT;
+  if (!salt) throw new Error('IP_HASH_SALT is not configured');
   const bytes = new TextEncoder().encode(ip + salt);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(digest))

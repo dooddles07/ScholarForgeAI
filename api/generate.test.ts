@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type * as GroqService from './_lib/services/groq.service.js';
 import type * as GroundingService from './_lib/services/grounding.service.js';
@@ -22,6 +22,13 @@ import { groundChat, groundItems } from './_lib/services/grounding.service.js';
 import handler from './generate.js';
 
 const original = { ...process.env };
+
+// Required by every request path (hashIp fails closed without it) -- set as a default here the
+// same way every other test file in api/_lib treats it, with dedicated tests below covering the
+// unset case.
+beforeEach(() => {
+  process.env.IP_HASH_SALT = 'test-salt';
+});
 
 afterEach(() => {
   process.env = { ...original };
@@ -63,6 +70,14 @@ describe('handler', () => {
     await handler(makeReq({ method: 'GET' }), res);
     expect(res.statusCode).toBe(405);
     expect(res.body).toEqual({ error: 'METHOD_NOT_ALLOWED' });
+  });
+
+  it('rejects with SERVICE_UNAVAILABLE when IP_HASH_SALT is unset, before touching origin/quota', async () => {
+    delete process.env.IP_HASH_SALT;
+    const res = makeRes();
+    await handler(makeReq({ headers: { origin: 'https://evil.example' } }), res);
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toEqual({ error: 'SERVICE_UNAVAILABLE' });
   });
 
   it('rejects a disallowed origin', async () => {

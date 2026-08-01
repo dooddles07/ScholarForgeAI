@@ -7,7 +7,7 @@ const chunks: GroundedChunk[] = [
   { id: 'c2', text: 'Ribosomes assemble proteins.', pageStart: 9, pageEnd: 10 },
 ];
 
-function question(chunkId: string): RawQuestionItem {
+function question(chunkId: string, quote = 'Mitochondria produce ATP.'): RawQuestionItem {
   return {
     type: 'mcq',
     prompt: 'What produces ATP?',
@@ -15,7 +15,7 @@ function question(chunkId: string): RawQuestionItem {
     correctIndex: 0,
     explanation: 'Stated directly in the text.',
     chunkId,
-    quote: 'Mitochondria produce ATP.',
+    quote,
   } as RawQuestionItem;
 }
 
@@ -37,16 +37,28 @@ describe('groundedCitation', () => {
   /* Page numbers come from our own chunk data. A model that claims a page it likes cannot move
      the citation to it. */
   it('takes page numbers from the chunk, never from the model', () => {
-    const claimed = { chunkId: 'c1', pageStart: 999, pageEnd: 999, quote: 'x' };
+    const claimed = { chunkId: 'c1', pageStart: 999, pageEnd: 999, quote: 'Mitochondria produce ATP.' };
     const citation = groundedCitation(claimed.chunkId, claimed.quote, chunks);
     expect(citation?.pageStart).toBe(4);
     expect(citation?.pageEnd).toBe(4);
+  });
+
+  it('rejects a real chunkId paired with a quote that is not in that chunk', () => {
+    expect(groundedCitation('c1', 'Ribosomes assemble proteins.', chunks)).toBeNull();
+    expect(groundedCitation('c1', 'x', chunks)).toBeNull();
+  });
+
+  it('matches a quote regardless of surrounding whitespace or case', () => {
+    expect(groundedCitation('c1', '  MITOCHONDRIA produce   atp.  ', chunks)).not.toBeNull();
   });
 });
 
 describe('groundItems', () => {
   it('keeps grounded items and drops ungrounded ones', () => {
-    const items = groundItems([question('c1'), question('c99'), question('c2')], chunks);
+    const items = groundItems(
+      [question('c1'), question('c99'), question('c2', 'Ribosomes assemble proteins.')],
+      chunks,
+    );
     expect(items).toHaveLength(2);
     expect(items.map((i) => (i.citation as { chunkId: string }).chunkId)).toEqual(['c1', 'c2']);
   });
@@ -63,8 +75,8 @@ describe('groundItems', () => {
   });
 
   it('grounds cards the same way as questions', () => {
-    const card = { front: 'F', back: 'B', chunkId: 'c1', quote: 'q' } as RawCardItem;
-    const bad = { front: 'F', back: 'B', chunkId: 'c99', quote: 'q' } as RawCardItem;
+    const card = { front: 'F', back: 'B', chunkId: 'c1', quote: 'Mitochondria produce ATP.' } as RawCardItem;
+    const bad = { front: 'F', back: 'B', chunkId: 'c99', quote: 'Mitochondria produce ATP.' } as RawCardItem;
     expect(groundItems([card, bad], chunks)).toHaveLength(1);
   });
 });
@@ -73,7 +85,7 @@ describe('groundChat', () => {
   const chat = (ids: string[]): RawChatResult =>
     ({
       content: 'Mitochondria produce ATP.',
-      citations: ids.map((id) => ({ chunkId: id, quote: 'q' })),
+      citations: ids.map((id) => ({ chunkId: id, quote: 'Mitochondria produce ATP.' })),
     }) as RawChatResult;
 
   it('keeps the answer when at least one citation is real', () => {

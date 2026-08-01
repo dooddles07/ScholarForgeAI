@@ -60,4 +60,10 @@ describe('hashIp', () => {
     process.env.IP_HASH_SALT = 'salt-b';
     expect(await hashIp('203.0.113.5')).not.toBe(a);
   });
+
+  /* An unset salt must never silently degrade to unsalted (reversible) hashing. */
+  it('fails closed when the salt is unset', async () => {
+    delete process.env.IP_HASH_SALT;
+    await expect(hashIp('203.0.113.5')).rejects.toThrow('IP_HASH_SALT is not configured');
+  });
 });

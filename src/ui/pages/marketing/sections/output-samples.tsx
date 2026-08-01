@@ -1,4 +1,4 @@
-import { Check, Highlighter, Volume2 } from 'lucide-react';
+import { Check, Highlighter } from 'lucide-react';
 
 /* Real artifacts at small scale, so the section shows the output instead of describing it. */
 
@@ -48,35 +48,6 @@ export function CardSample() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-export function ExplanationSample() {
-  return (
-    <div className={shell}>
-      <div className="flex flex-wrap gap-1.5 font-mono text-[0.65rem]">
-        {['Simple', 'Normal', 'Deep'].map((depth, i) => (
-          <span
-            key={depth}
-            className={
-              i === 0
-                ? 'rounded-full bg-mark px-2.5 py-1 text-ink'
-                : 'rounded-full border border-ink-line px-2.5 py-1 text-ink-muted'
-            }
-          >
-            {depth}
-          </span>
-        ))}
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-ink-fg">
-        Think of NADH as a courier. It picks up electrons in the Krebs cycle and drops them at the
-        start of the transport chain.
-      </p>
-      <p className={cite}>
-        <Volume2 aria-hidden className="size-3.5" />
-        Based on pages 47 to 49
-      </p>
     </div>
   );
 }

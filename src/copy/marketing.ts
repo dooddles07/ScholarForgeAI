@@ -3,7 +3,7 @@
 export const hero = {
   eyebrow: 'Free forever',
   headline: 'Turn your notes into practice',
-  sub: 'Upload a PDF, slides, or a book. Get quizzes, flashcards, explanations, and a practice exam.',
+  sub: 'Upload a PDF, slides, or a book. Get quizzes, flashcards, and a practice exam.',
   dropzone: 'Drop a file here, or tap to choose one',
   dropzoneActive: 'Let go and we will start reading',
   formats: 'PDF, PowerPoint, Word, EPUB, text',
@@ -44,7 +44,7 @@ export const thread = {
 } as const;
 
 export const output = {
-  heading: 'Four things out of one file',
+  heading: 'Three things out of one file',
   items: [
     {
       title: 'Quizzes',
@@ -53,10 +53,6 @@ export const output = {
     {
       title: 'Flashcards',
       body: 'Made for you, editable, swipeable. They come back on a schedule set by what you keep forgetting.',
-    },
-    {
-      title: 'Explanations',
-      body: 'Any concept at three depths, from "explain like I know nothing" to "I have an exam on this Thursday".',
     },
     {
       title: 'Practice exams',
@@ -68,7 +64,7 @@ export const output = {
 export const grounding = {
   heading: 'Nothing is invented',
   body: [
-    'Every question, answer, and explanation is drawn from your document and cites the page it came from. Anything we cannot trace back to a real passage is thrown away before it reaches you.',
+    'Every question and answer is drawn from your document and cites the page it came from. Anything we cannot trace back to a real passage is thrown away before it reaches you.',
     'A study tool that makes things up is worse than no study tool. You would be revising fiction, and you would not know which parts.',
   ],
 } as const;

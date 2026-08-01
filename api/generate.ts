@@ -18,6 +18,12 @@ import type {
    This is the long-documented, guaranteed-supported way to write a Node Function on Vercel. */
 export const config = { maxDuration: 60 };
 
+// Runs once per cold start, not per request: a missing ALLOWED_ORIGIN never rejects a request
+// (see isAllowedOrigin), so nothing else would surface a forgotten production config.
+if (process.env.VERCEL_ENV === 'production' && !process.env.ALLOWED_ORIGIN) {
+  console.warn(JSON.stringify({ event: 'config_warning', code: 'ALLOWED_ORIGIN_UNSET' }));
+}
+
 /* Groq's free tier caps at 8,000 tokens per minute, which is the binding constraint here — not the
    model's 131k context window. Roughly 24k characters of passage text leaves room for the prompt
    and the completion inside that budget. The client selects which chunks to send. */
@@ -61,6 +67,16 @@ async function handleGenerate(
     logEvent('request_rejected', { code: 'METHOD_NOT_ALLOWED', ms: Date.now() - start });
     await incrementErrorCounter('METHOD_NOT_ALLOWED');
     res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
+    return;
+  }
+
+  // Checked before hashIp is called: an unset salt makes hashIp throw, and this path gives a
+  // proper SERVICE_UNAVAILABLE instead of routing a config error through the INTERNAL_ERROR
+  // catch-all meant for genuine bugs.
+  if (!process.env.IP_HASH_SALT) {
+    logEvent('request_rejected', { code: 'SERVICE_UNAVAILABLE', ms: Date.now() - start });
+    await incrementErrorCounter('SERVICE_UNAVAILABLE');
+    res.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
     return;
   }
 

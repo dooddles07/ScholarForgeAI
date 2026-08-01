@@ -1,14 +1,19 @@
 import type { GroundedChunk, RawCardItem, RawChatResult, RawQuestionItem } from '../models/request.js';
 
 /* The model is trusted to write good prose, never to invent a source: every returned item is
-   dropped unless its chunkId matches one we actually sent, and the page numbers in the final
-   citation always come from our own chunk data, never a model-claimed page. */
+   dropped unless its chunkId matches one we actually sent AND its quote is real text from that
+   chunk, and the page numbers in the final citation always come from our own chunk data, never
+   a model-claimed page. */
 
 export interface Citation {
   chunkId: string;
   pageStart: number;
   pageEnd: number;
   quote: string;
+}
+
+function normalize(s: string): string {
+  return s.trim().replace(/\s+/g, ' ').toLowerCase();
 }
 
 export function groundedCitation(
@@ -18,6 +23,7 @@ export function groundedCitation(
 ): Citation | null {
   const chunk = chunks.find((c) => c.id === chunkId);
   if (!chunk) return null;
+  if (!normalize(chunk.text).includes(normalize(quote))) return null;
   return { chunkId: chunk.id, pageStart: chunk.pageStart, pageEnd: chunk.pageEnd, quote };
 }
 
