@@ -55,11 +55,15 @@ A component-test pass followed, the first in the codebase: 14 tests across `Stud
 
 **Finding: the accessibility sweep covers almost nothing.** `tests/e2e/axe-audit.mjs` lists ten routes, nine of them under `/app`. Since [ADR-0011](08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md) made sign-in mandatory, the script has been reaching the sign-in gate for all nine and auditing that same screen repeatedly, reporting clean. Its sample-document seeding step clicks a button behind the gate and swallows the failure, which is why nothing surfaced. The script now detects the gate and names every route it could not reach, so a clean result states what it actually covered. Added the missing `npm run test:a11y` script and documented the gap in [ACCESSIBILITY.md](02-DESIGN/ACCESSIBILITY.md), which also claimed a Lighthouse check that does not exist.
 
+The gap is now closed with the **Firebase Auth emulator**, chosen over a build-time gate bypass so that no auth bypass exists in the shipped app. CI starts the emulator; the audit script creates a user over its REST API and writes the session into the IndexedDB record the Firebase SDK reads at startup, so the app boots signed in through its ordinary path. Driving the emulator's own account-picker markup was rejected — it changes between emulator releases. `src/lib/firebase.ts` calls `connectAuthEmulator` only when `VITE_FIREBASE_AUTH_EMULATOR_HOST` is set, which happens in the CI accessibility job and nowhere else.
+
+Verified locally end to end: with the emulator, all ten routes audit clean at both viewports, including the rebuilt settings page. Without it, the script reports all 18 route/viewport pairs as unreachable instead of silently passing — which is what had been happening.
+
 **Next action**
-Decide how the audit gets a signed-in session: Firebase Auth emulator with a seeded user, or a build-time gate bypass for audit builds. The second is faster and puts an auth bypass in the codebase. Not chosen yet, so the sweep stays at one route until it is.
+Nothing outstanding. Lighthouse is still listed as a CI check in [ACCESSIBILITY.md](02-DESIGN/ACCESSIBILITY.md) and does not exist; noted there rather than fixed.
 
 **Blockers**
-None blocking, but the accessibility sweep should not be trusted as coverage until the above is resolved.
+None.
 
 ---
 

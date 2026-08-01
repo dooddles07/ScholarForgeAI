@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
+import { connectAuthEmulator, getAuth, GoogleAuthProvider, type Auth } from 'firebase/auth';
 
 /* App init and Auth only. Firestore lives in ./firestore.ts so that signing in — which every
    visitor must do — doesn't also pull down the Firestore SDK, which only cloud sync needs.
@@ -37,8 +37,17 @@ export function firebaseApp(): FirebaseApp {
   return app;
 }
 
+let auth: Auth | undefined;
+
+/* The emulator host is only ever set by the accessibility audit's CI job. Unset everywhere else,
+   including every real build, so there is no path from a deployed bundle to a fake auth server. */
 export function firebaseAuth(): Auth {
-  return getAuth(firebaseApp());
+  if (!auth) {
+    auth = getAuth(firebaseApp());
+    const emulatorHost = import.meta.env.VITE_FIREBASE_AUTH_EMULATOR_HOST;
+    if (emulatorHost) connectAuthEmulator(auth, emulatorHost, { disableWarnings: true });
+  }
+  return auth;
 }
 
 export const googleProvider = new GoogleAuthProvider();

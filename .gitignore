@@ -13,3 +13,6 @@ test-results
 .vite
 .claude/worktrees
 .firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

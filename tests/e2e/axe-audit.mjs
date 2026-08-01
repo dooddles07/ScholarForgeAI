@@ -11,6 +11,80 @@ const axeSource = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5180';
 
+/* Set only when the Auth emulator is running (the CI accessibility job, or locally by following
+   ACCESSIBILITY.md). Unset, the audit still runs and simply reports the /app routes as unreachable. */
+const EMULATOR = process.env.FIREBASE_AUTH_EMULATOR_HOST ?? '';
+const API_KEY = process.env.VITE_FIREBASE_API_KEY ?? 'fake-api-key';
+
+/*
+ * Signing in through the real popup would mean driving the emulator's own account-picker markup,
+ * which changes between emulator releases. Instead a user is created over the emulator's REST API
+ * and the resulting session is written into the same IndexedDB record the Firebase SDK reads on
+ * startup, so the app boots already signed in through its ordinary code path.
+ */
+async function emulatorSession() {
+  const endpoint = `http://${EMULATOR}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`;
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      email: `audit-${Date.now()}@example.com`,
+      password: 'audit-password',
+      returnSecureToken: true,
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`Auth emulator sign-up failed (${response.status}). Is it running on ${EMULATOR}?`);
+  }
+  return await response.json();
+}
+
+async function seedSignedIn(context, session) {
+  await context.addInitScript(
+    ({ session, apiKey }) => {
+      const user = {
+        uid: session.localId,
+        email: session.email,
+        emailVerified: true,
+        isAnonymous: false,
+        providerData: [
+          {
+            providerId: 'google.com',
+            uid: session.localId,
+            displayName: 'Audit User',
+            email: session.email,
+            phoneNumber: null,
+            photoURL: null,
+          },
+        ],
+        stsTokenManager: {
+          refreshToken: session.refreshToken,
+          accessToken: session.idToken,
+          expirationTime: Date.now() + 3600 * 1000,
+        },
+        createdAt: String(Date.now()),
+        lastLoginAt: String(Date.now()),
+        apiKey,
+        appName: '[DEFAULT]',
+      };
+
+      const open = indexedDB.open('firebaseLocalStorageDb', 1);
+      open.onupgradeneeded = () => {
+        open.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' });
+      };
+      open.onsuccess = () => {
+        const db = open.result;
+        const tx = db.transaction('firebaseLocalStorage', 'readwrite');
+        tx.objectStore('firebaseLocalStorage').put({
+          fbase_key: `firebase:authUser:${apiKey}:[DEFAULT]`,
+          value: user,
+        });
+      };
+    },
+    { session, apiKey: API_KEY },
+  );
+}
+
 const ROUTES = [
   '/',
   '/app/library',
@@ -30,6 +104,10 @@ const VIEWPORTS = [
 ];
 
 const browser = await chromium.launch();
+const session = EMULATOR ? await emulatorSession() : null;
+if (!session) {
+  console.log('FIREBASE_AUTH_EMULATOR_HOST is unset, so /app routes will not be reachable.\n');
+}
 let totalViolations = 0;
 const unaudited = [];
 
@@ -64,12 +142,22 @@ async function settle(page) {
 
 for (const viewport of VIEWPORTS) {
   const context = await browser.newContext({ viewport, reducedMotion: 'reduce' });
+  if (session) await seedSignedIn(context, session);
   const page = await context.newPage();
 
   // Seed the sample document so routes that need one have real content to audit.
   await page.goto(`${BASE}/app/library`);
   await page.evaluate(() => localStorage.clear());
-  await page.getByRole('button', { name: /sample document/i }).click().catch(() => {});
+  /* Swallowing this failure is what hid the sign-in gate for so long: with no sample document the
+     document routes render an empty state and audit clean without ever showing real content. */
+  const seeded = await page
+    .getByRole('button', { name: /sample document/i })
+    .click()
+    .then(() => true)
+    .catch(() => false);
+  if (!seeded && session) {
+    console.log('WARNING: could not seed the sample document; document routes may be empty.\n');
+  }
   await page.waitForTimeout(400);
 
   for (const route of ROUTES) {

@@ -9,6 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string;
   readonly VITE_MOCK_AI?: string;
   readonly VITE_MOCK_FAILURE?: string;
+  readonly VITE_FIREBASE_AUTH_EMULATOR_HOST?: string;
 }
 
 interface ImportMeta {

@@ -70,6 +70,19 @@ jobs:
 
   accessibility:
     runs-on: ubuntu-latest
+    # Every /app route is behind mandatory sign-in (ADR-0011), so without a session this job
+    # audits the sign-in screen and nothing else. The Auth emulator supplies one. These Firebase
+    # values are throwaway strings for the emulator, not credentials -- the real project is never
+    # contacted, and VITE_FIREBASE_AUTH_EMULATOR_HOST is set nowhere but here.
+    env:
+      VITE_FIREBASE_API_KEY: fake-api-key
+      VITE_FIREBASE_AUTH_DOMAIN: localhost
+      VITE_FIREBASE_PROJECT_ID: scholarforge-audit
+      VITE_FIREBASE_STORAGE_BUCKET: scholarforge-audit.appspot.com
+      VITE_FIREBASE_MESSAGING_SENDER_ID: '0'
+      VITE_FIREBASE_APP_ID: '1:0:web:audit'
+      VITE_FIREBASE_AUTH_EMULATOR_HOST: http://127.0.0.1:9099
+      FIREBASE_AUTH_EMULATOR_HOST: 127.0.0.1:9099
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -79,6 +92,14 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run build
+      - name: Start the Auth emulator
+        run: |
+          # Pinned: an emulator major bump should be a deliberate change, not a surprise red build.
+          npx --yes firebase-tools@14 emulators:start --only auth --project scholarforge-audit &
+          for i in $(seq 1 60); do
+            curl -sf http://127.0.0.1:9099 >/dev/null && break
+            sleep 1
+          done
       - name: Serve and audit
         run: |
           npx vite preview --port 5180 &

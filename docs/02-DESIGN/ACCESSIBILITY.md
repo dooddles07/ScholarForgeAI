@@ -147,20 +147,35 @@ locally with `npm run test:a11y` against a preview server on port 5180. It check
 
 Automated tools catch perhaps a third of real problems. They are a floor, not a standard.
 
-#### Coverage gap
+#### How the audit gets past sign-in
 
-**Only the marketing page is currently audited.** Every `/app` route is behind mandatory Google
-sign-in ([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)), which the audit script
-cannot satisfy, so it reaches the sign-in gate instead of the route. This was silent until the
-script learned to detect the gate — it audited that same screen ten times and reported clean. It
-now names every route it could not reach.
+Every `/app` route is behind mandatory Google sign-in
+([ADR-0011](../08-DECISIONS/ADR-0011-MANDATORY-GOOGLE-SIGN-IN.md)). For a period this silently
+reduced the sweep to a single route: the script reached the sign-in gate for the other nine,
+audited that same screen repeatedly, and reported clean.
+
+The fix is the **Firebase Auth emulator**, not a bypass in the app. CI starts it, the script
+creates a user over its REST API and writes the resulting session into the IndexedDB record the
+Firebase SDK reads at startup, so the app boots signed in through its ordinary code path. Driving
+the emulator's own account-picker markup was rejected as the mechanism — it changes between
+emulator releases.
+
+`src/lib/firebase.ts` calls `connectAuthEmulator` only when `VITE_FIREBASE_AUTH_EMULATOR_HOST` is
+set, which happens nowhere but the CI accessibility job. No real build can reach a fake auth
+server, and no auth bypass exists in the shipped bundle.
+
+Without the emulator the audit still runs and names every route it could not reach, so a clean
+result always states what it actually covered. To reproduce locally:
+
+```bash
+npx --yes firebase-tools@14 emulators:start --only auth --project scholarforge-audit &
+npm run build && npx vite preview --port 5180 &
+FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npm run test:a11y
+```
+
+The build needs the same `VITE_FIREBASE_*` throwaway values the CI job sets.
 
 Lighthouse is not wired up at all, despite the score-95 target below.
-
-Closing the gap needs a signed-in session in CI. The two honest options are the Firebase Auth
-emulator with a seeded user, or a build-time flag that bypasses the gate for audit builds — the
-latter puts an auth bypass in the codebase and would have to be provably unreachable in
-production. Neither has been chosen yet.
 
 ### Manual, per release
 
