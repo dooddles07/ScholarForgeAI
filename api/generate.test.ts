@@ -89,6 +89,7 @@ describe('handler', () => {
   });
 
   it('maps a RATE_LIMITED quota result to 429', async () => {
+    process.env.GROQ_API_KEY = 'test-key';
     vi.mocked(checkAndConsumeQuota).mockResolvedValue({
       ok: false,
       reason: 'RATE_LIMITED',
@@ -101,6 +102,7 @@ describe('handler', () => {
   });
 
   it('returns INTERNAL_ERROR when quota/parsing code throws unexpectedly', async () => {
+    process.env.GROQ_API_KEY = 'test-key'; // apiKey check runs before quota, must pass to reach it
     vi.mocked(checkAndConsumeQuota).mockRejectedValue(new Error('boom'));
     const res = makeRes();
     await handler(makeReq(), res);
@@ -231,6 +233,7 @@ describe('handler', () => {
     });
 
     it('logs INTERNAL_ERROR via console.error with the elapsed time, not the raw IP', async () => {
+      process.env.GROQ_API_KEY = 'test-key';
       vi.mocked(checkAndConsumeQuota).mockRejectedValue(new Error('boom'));
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const res = makeRes();
@@ -252,6 +255,7 @@ describe('handler', () => {
     });
 
     it('increments the matching error counter for a quota rejection', async () => {
+      process.env.GROQ_API_KEY = 'test-key';
       vi.mocked(checkAndConsumeQuota).mockResolvedValue({
         ok: false,
         reason: 'RATE_LIMITED',

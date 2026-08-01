@@ -94,6 +94,21 @@ async function handleGenerate(
     return;
   }
 
+  // Checked before quota is consumed: a misconfigured deploy (missing key) shouldn't burn a
+  // user's daily allowance on a request that was never going to reach Groq.
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    logEvent('request_rejected', {
+      code: 'SERVICE_UNAVAILABLE',
+      ipHash,
+      kind: body.kind,
+      ms: Date.now() - start,
+    });
+    await incrementErrorCounter('SERVICE_UNAVAILABLE');
+    res.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
+    return;
+  }
+
   const quota = await checkAndConsumeQuota(ipHash);
   if (!quota.ok) {
     const status = quota.reason === 'QUOTA_EXCEEDED' || quota.reason === 'RATE_LIMITED' ? 429 : 503;
@@ -105,19 +120,6 @@ async function handleGenerate(
     });
     await incrementErrorCounter(quota.reason);
     res.status(status).json({ error: quota.reason });
-    return;
-  }
-
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    logEvent('request_rejected', {
-      code: 'SERVICE_UNAVAILABLE',
-      ipHash,
-      kind: body.kind,
-      ms: Date.now() - start,
-    });
-    await incrementErrorCounter('SERVICE_UNAVAILABLE');
-    res.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
     return;
   }
 
