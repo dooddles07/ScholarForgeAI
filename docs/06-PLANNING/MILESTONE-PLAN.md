@@ -205,7 +205,7 @@ No new features. Verification only.
 | Bring-your-own-key works, with the guide and the privacy note |
 | Warning-before-the-wall works from `quotaRemaining` |
 | The full manual accessibility checklist passes, including NVDA and VoiceOver |
-| Lighthouse accessibility 95 or above |
+| Zero `axe-core` violations across every route |
 | Real-device testing complete on Android and iOS |
 | **100 generated questions reviewed; 90% or more sound with verified citations** |
 | Every error state's copy reviewed against the guide |

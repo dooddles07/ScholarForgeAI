@@ -80,7 +80,7 @@ Work through this list against the live deployment:
 - [ ] `/api/generate` rejects a request carrying a foreign `Origin` header
 - [ ] Go offline; the app shell still loads and card review still works
 - [ ] Install to a phone home screen; it opens standalone
-- [ ] Lighthouse: accessibility 95 or above
+- [ ] Lighthouse: performance and first contentful paint (accessibility is already gated in CI by `axe-core`)
 
 The bundle key check matters most. Search the actual deployed JavaScript, not by reasoning about the code — `api/` never ships to the client bundle since Vite only builds `src/`, but verify it anyway.
 

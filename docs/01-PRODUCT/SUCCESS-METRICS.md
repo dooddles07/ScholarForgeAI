@@ -56,7 +56,7 @@ The most useful information about a tool like this comes from people telling you
 | A real 100-page university PDF processes correctly | Yes, tested on at least ten genuine documents across subjects |
 | Generated questions are accurate and properly cited | 90%+ judged sound in a manual review of 100 questions |
 | Works on a mid-range Android phone | Verified on real hardware, not just a device emulator |
-| Lighthouse accessibility | 95 or above |
+| Accessibility violations (`axe-core`, CI) | Zero |
 | Monthly running cost | $0 |
 | Someone other than the author successfully self-hosts it | At least one confirmed instance |
 

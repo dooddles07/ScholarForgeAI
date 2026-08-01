@@ -226,7 +226,7 @@ Identifiers are stable. Reference them in commits, issues, and tests.
 | Initial JavaScript bundle | Under 300 KB gzipped, excluding lazily-loaded parsers | Build output check |
 | Parse a 100-page PDF | Under 10s on a mid-range Android device | Manual test on real hardware |
 | Interface stays responsive during parsing | No frame longer than 50ms on the main thread | Performance profile |
-| Lighthouse accessibility score | 95 or above | CI |
+| Accessibility violations | Zero `axe-core` violations, every route, two viewports | CI |
 | Contrast | WCAG 2.2 AA throughout | Automated axe check plus manual review |
 | Keyboard operation | Every feature reachable and operable | Manual test |
 | Works with JavaScript-heavy blocking extensions | Degrades with an explanation, not a blank page | Manual test |

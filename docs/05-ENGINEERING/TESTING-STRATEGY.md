@@ -122,7 +122,7 @@ Every spec runs at 360px and 1280px. Additionally, one spec asserts no horizonta
 
 ## Accessibility
 
-**Automated, in CI:** `axe-core` on every route, failing the build on any violation. Lighthouse accessibility minimum 95. All interactive elements have accessible names.
+**Automated, in CI:** `axe-core` on every route at mobile and desktop widths, failing the build on any violation, plus a horizontal-scroll check. `/app` routes are reached via the Firebase Auth emulator, since sign-in is mandatory — see [ACCESSIBILITY.md](../02-DESIGN/ACCESSIBILITY.md). Lighthouse is not used: its accessibility category runs `axe-core` anyway, and a score threshold is a weaker gate than no violations.
 
 Automated tools catch roughly a third of real problems, so they are a floor rather than a standard.
 

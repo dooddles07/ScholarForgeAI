@@ -59,8 +59,10 @@ The gap is now closed with the **Firebase Auth emulator**, chosen over a build-t
 
 Verified locally end to end: with the emulator, all ten routes audit clean at both viewports, including the rebuilt settings page. Without it, the script reports all 18 route/viewport pairs as unreachable instead of silently passing — which is what had been happening.
 
+The Lighthouse claim was resolved by deletion rather than implementation. Six documents stated a CI-enforced accessibility score of 95; no such check existed in any workflow. It was not built because Lighthouse's accessibility category runs `axe-core` internally and the sweep above already covers more — extra WCAG tag sets, two viewports, ten routes, and a horizontal-scroll check Lighthouse does not perform. A score of 95 is also a weaker gate than zero violations, since it tolerates some. The target is now stated as the check that actually runs; Lighthouse stays on the manual pre-release checklist for performance, where it is not redundant.
+
 **Next action**
-Nothing outstanding. Lighthouse is still listed as a CI check in [ACCESSIBILITY.md](02-DESIGN/ACCESSIBILITY.md) and does not exist; noted there rather than fixed.
+Nothing outstanding.
 
 **Blockers**
 None.

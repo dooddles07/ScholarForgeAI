@@ -3,7 +3,7 @@
 Purpose: the standard we hold, and how each requirement is met.
 Last updated: 2026-07-30
 
-**Target: WCAG 2.2 Level AA.** Lighthouse accessibility score of 95 or above, enforced in CI.
+**Target: WCAG 2.2 Level AA**, enforced in CI by an `axe-core` sweep of every route at two viewports.
 
 This is a study tool for students, and students include people who are blind, have low vision, are dyslexic, have motor impairments, or have ADHD. An inaccessible study tool excludes people from studying, which makes accessibility a correctness requirement rather than a polish item.
 
@@ -175,7 +175,16 @@ FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 npm run test:a11y
 
 The build needs the same `VITE_FIREBASE_*` throwaway values the CI job sets.
 
-Lighthouse is not wired up at all, despite the score-95 target below.
+#### Why not Lighthouse
+
+Earlier drafts of this document claimed a CI-enforced Lighthouse accessibility score of 95. Nothing
+of the sort existed. It was not built, because Lighthouse's accessibility category runs `axe-core`
+internally and the sweep above already covers more: additional WCAG tag sets, two viewports, ten
+routes, and a horizontal-scroll check Lighthouse does not perform. A score of 95 is also a weaker
+gate than "no violations" — it permits some.
+
+Lighthouse remains useful for performance, where it is not redundant, and stays on the manual
+pre-release checklist in [DEPLOYMENT.md](../04-OPERATIONS/DEPLOYMENT.md).
 
 ### Manual, per release
 
