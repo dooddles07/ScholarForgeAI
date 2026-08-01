@@ -139,4 +139,57 @@ describe('handler', () => {
     expect(res.statusCode).toBe(200);
     expect((res.body as { quotaRemaining: number }).quotaRemaining).toBe(7);
   });
+
+  describe('structured logging', () => {
+    it('logs a rejection with the code and ipHash, never the raw IP', async () => {
+      vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+        ok: true,
+        reason: 'OK',
+        remaining: 5,
+      } as never);
+      delete process.env.GROQ_API_KEY;
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handler(makeReq({ headers: { 'x-forwarded-for': '203.0.113.5' } }), res);
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const logged = logSpy.mock.calls[0]?.[0] as string;
+      const parsed = JSON.parse(logged);
+      expect(parsed.event).toBe('request_rejected');
+      expect(parsed.code).toBe('SERVICE_UNAVAILABLE'); // no GROQ_API_KEY set in the test env
+      expect(typeof parsed.ipHash).toBe('string');
+      expect(logged).not.toContain('203.0.113.5');
+      logSpy.mockRestore();
+    });
+
+    it('logs success without leaking chunk text or the raw IP', async () => {
+      vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+        ok: true,
+        reason: 'OK',
+        remaining: 12,
+      } as never);
+      vi.mocked(callGroq).mockResolvedValue([]);
+      process.env.GROQ_API_KEY = 'test-key';
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handler(makeReq({ headers: { 'x-forwarded-for': '203.0.113.5' } }), res);
+      const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
+      expect(logged).toContain('request_succeeded');
+      expect(logged).not.toContain('203.0.113.5');
+      expect(logged).not.toContain(validChunk.text);
+      logSpy.mockRestore();
+    });
+
+    it('logs INTERNAL_ERROR via console.error with the elapsed time, not the raw IP', async () => {
+      vi.mocked(checkAndConsumeQuota).mockRejectedValue(new Error('boom'));
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handler(makeReq({ headers: { 'x-forwarded-for': '203.0.113.5' } }), res);
+      const logged = errorSpy.mock.calls[0]?.[0] as string;
+      const parsed = JSON.parse(logged);
+      expect(parsed.code).toBe('INTERNAL_ERROR');
+      expect(typeof parsed.ms).toBe('number');
+      expect(logged).not.toContain('203.0.113.5');
+      errorSpy.mockRestore();
+    });
+  });
 });
