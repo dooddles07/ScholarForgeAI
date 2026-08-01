@@ -41,6 +41,7 @@ A full code review requested to finalize the project for shipping. Three paralle
 - Browser checks via Playwright MCP after each risky change: marketing page and `/app` route console-clean after the react-router bump; "Three things out of one file" section renders correctly after the copy cut; final full loop clean after the dependency refresh.
 - Live production checks after deploy: quiz flow generates questions with real page citations (grounding fix confirmed live), marketing page confirmed live, service-worker MIME issue confirmed resolved.
 - PDF parsing (`pdfjs-dist` 4→6, the highest-risk bump) verified at the type level only — strict typecheck passes clean against v6's real declarations for every API surface `pdf.ts` calls — but not exercised end-to-end in-browser, since `/app/*` is gated behind Google sign-in that couldn't be scripted around. User owns a real-PDF-upload check.
+- securityheaders.com scan of the live deploy: **A+**, all six headers present (CSP, Permissions-Policy, Referrer-Policy, HSTS, X-Content-Type-Options, and `frame-ancestors 'none'` standing in for X-Frame-Options). The one flagged item, `Access-Control-Allow-Origin: *` on static/HTML responses, is Vercel's own platform default for public CDN content, not something `vercel.json` sets, and carries no risk here since auth is Firebase-SDK-based rather than cookie/CORS-dependent.
 
 **Status**
 Done and deployed. All 15 original findings closed (fixed, verified-no-action-needed, or determined stale) plus the full "everything" dependency refresh on top.
