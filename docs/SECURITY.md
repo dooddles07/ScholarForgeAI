@@ -128,7 +128,9 @@ skipped entirely**, so it must be set in production.
 
 **Kill switch.** An Upstash Redis flag checked on every request; when set, generation returns
 `SERVICE_DISABLED`. Exists so a problem can be stopped in seconds without a deployment. There is no
-bypass.
+bypass. Toggle it with `npm run kill-switch -- status|on|off` (reads
+`UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` from the environment); the Upstash console
+remains a fallback if those credentials aren't available locally.
 
 **Per-minute burst limit.** Counters keyed `burst:<sha256(ip + salt)>:<YYYY-MM-DDTHH:MM>` (per-IP)
 and `burst:global:<YYYY-MM-DDTHH:MM>`, TTL 90 seconds. Checked before the daily counters, so a

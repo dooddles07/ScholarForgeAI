@@ -18,7 +18,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:a11y": "node tests/e2e/axe-audit.mjs"
+    "test:a11y": "node tests/e2e/axe-audit.mjs",
+    "kill-switch": "node scripts/kill-switch.mjs"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.2",
