@@ -5,6 +5,7 @@ import { db } from '@/persistence/db';
 import { saveCards, saveDeck } from '@/persistence/study';
 import { generateCards } from '@/ai/client';
 import { generationErrorMessage } from '@/lib/generation-error';
+import { reportQuotaRemaining } from './use-quota-warning';
 
 export function useDeckCards(documentId: string | undefined) {
   return useLiveQuery(
@@ -46,7 +47,9 @@ export function useGenerateDeck() {
             createdAt: Date.now(),
           });
         }
-        const cards = await generateCards(doc, deckId, count);
+        const cards = await generateCards(doc, deckId, count, {
+          onQuotaRemaining: reportQuotaRemaining,
+        });
         await saveCards(cards);
       } catch (err) {
         setError(generationErrorMessage(err));

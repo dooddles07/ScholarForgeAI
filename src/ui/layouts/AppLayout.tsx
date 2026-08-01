@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router';
 import { BottomNav } from './BottomNav';
 import { Sidebar } from './Sidebar';
 import { OfflineBanner } from './OfflineBanner';
+import { QuotaBanner } from './QuotaBanner';
 import { AuthGate } from '@/ui/components/AuthGate';
 import { useAppearance } from '@/hooks/use-settings';
 import { useSettingsSync } from '@/hooks/use-settings-sync';
@@ -25,6 +26,7 @@ export function AppLayout() {
 
         <div className="lg:pl-60">
           <OfflineBanner />
+          <QuotaBanner />
           {/* Bottom padding clears the tab bar; it is only present below lg. */}
           <main id="main" tabIndex={-1} className="pb-28 lg:pb-12">
             <div key={location.pathname} className="route-fade">

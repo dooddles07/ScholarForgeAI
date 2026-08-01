@@ -50,6 +50,16 @@ export const quota = {
   wait: 'It resets tomorrow. Everything you have already made still works, including offline.',
 } as const;
 
+/* Shown before the wall, not after — a warning while requests are still succeeding. */
+export const quotaWarning = {
+  message: (remaining: number) =>
+    remaining <= 0
+      ? 'That was the last free generation for today.'
+      : remaining === 1
+        ? 'You have 1 free generation left today.'
+        : `You have ${remaining} free generations left today.`,
+} as const;
+
 export const generic = {
   what: 'Something went wrong.',
   next: 'Reloading usually fixes it. If it keeps happening, tell us what you were doing and we will look into it.',
