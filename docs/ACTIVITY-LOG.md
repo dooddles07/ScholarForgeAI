@@ -7,6 +7,52 @@ Newest entries at the top.
 
 ---
 
+## 2026-08-01 — Pre-ship code review, fixes, and a full dependency refresh
+
+**Done**
+A full code review requested to finalize the project for shipping. Three parallel research agents audited the API/security layer, build/test health, and docs/known-issues, producing 15 ranked findings. Worked through the list to zero, then did a full dependency refresh at the user's request to go "everything, all trailing majors."
+
+- **Grounding no longer trusts the model's quote.** `groundedCitation` in `grounding.service.ts` checked only that `chunkId` matched a real chunk; the `quote` text itself was never verified, so a fabricated quote passed as long as it named a real page. Now checks `chunk.text` contains the (whitespace/case-normalized) quote before accepting a citation. This was the one finding that contradicted an existing documented guarantee (SECURITY.md already claimed "quotes real text" — now actually true). Tests extended to assert a real chunkId with a fabricated quote is rejected.
+- **`react-router` bumped 7→8.3.0**, past a disclosed CSRF advisory (GHSA-qwww-vcr4-c8h2, range 7.12.0–8.2.0). Not exploitable here (RSC mode unused) but patched anyway; verified no breakage across the 22 files importing it.
+- **`IP_HASH_SALT` fails closed.** `hashIp` now throws if the salt is unset instead of hashing with an empty string (previously silently reversible via rainbow table over IPv4). `generate.ts` checks it before computing the hash at all, returning `SERVICE_UNAVAILABLE` — same class of fix as the existing `GROQ_API_KEY` presence check. `ALLOWED_ORIGIN` unset in production now logs a cold-start warning (`ALLOWED_ORIGIN_UNSET`) instead of staying silent.
+- **Epic C1 ("explanations at three depths") was never built** but was still on the marketing page. Removed from `output-samples.tsx`/`Output.tsx`/`copy/marketing.ts` ("Four things out of one file" → "Three things"); PRD's Epic C1 entry rewritten to say plainly that it is deferred, not shipped, rather than reading like a live requirement.
+- **Full dependency refresh**, all trailing majors: `pdfjs-dist` 4→6, `ts-fsrs` 4→5, `vite` 6→8 (now rolldown-based; local build dropped ~6.9s→0.6s), `vitest` 2→4, `eslint` 9→10, `dexie-react-hooks` 1→4, `lucide-react` 0→1, plus `jsdom`/`@testing-library/jest-dom`/`playwright`/`tailwind-merge`/`globals`. Held `typescript` at 6.0.3 rather than the new 7.0.2 native (Go-based) compiler — too new, broke type resolution against `@testing-library/react`'s declarations. Held `@vitejs/plugin-react` at 5.2.0 rather than 6.x, which has a broken optional peer chain through `@rolldown/plugin-babel`/`@babel/core` that `npm install` can't resolve without `--legacy-peer-deps` (which itself silently drops implicit peer auto-installs — cost an hour chasing phantom `@testing-library/react` type errors before finding the real cause and adding `@testing-library/dom` as an explicit devDependency instead).
+- **`eslint-plugin-react-hooks` 5→7 (required — coupled to eslint 10) surfaced 9 genuine findings** under its new strict compiler-readiness rules (`set-state-in-effect`, `purity`, `refs`), not false positives: `Flashcard.tsx` and `QuestionCard.tsx` reset local state via an effect keyed on a changing id — fixed by moving to `key={id}` at the call site (`ReviewSession.tsx`, `QuizPage.tsx`) so React remounts instead. `use-quiz-session.ts` and `use-elapsed.ts` called `Date.now()` directly in `useRef()` initializers, impure on every render pass — converted to lazy `useState(() => Date.now())`, since the newer rules also forbid touching `ref.current` during render at all (the lazy-ref-init pattern from React's own docs no longer satisfies them). `use-cloud-sync.ts`'s auth-sync effect got a narrow, justified `eslint-disable` block instead of a forced rewrite — it's a legitimate subscription-driven state sync, which the rule's own message describes as one of the allowed cases. `ParsePage.tsx` moved its initial-state computation into a `useState` lazy initializer instead of setting it redundantly in an effect. `parsing/index.ts` had two genuinely dead initializer values flagged by an unrelated new base rule (`no-useless-assignment`), removed.
+- **Remaining `npm audit` findings (10) are all inside `@vercel/node`'s own internal build tooling** (`ajv`/`js-yaml`/`minimatch`/`path-to-regexp`/`undici`, nested under `@vercel/build-utils`/`@vercel/python-analysis`) — unused code paths (no Python, no static config in this project), and `--force` would downgrade `@vercel/node` itself 5.9.3→3.0.1 to fix them. Left as accepted risk rather than forcing a real regression.
+- **Post-deploy: diagnosed a stale-service-worker MIME error** the user hit after deploying (`Failed to load module script... MIME type "text/html"`). Root cause: the vite 8/rolldown rebuild regenerated every asset hash; a browser with the old service worker/cached `index.html` requested an asset hash that no longer exists, Vercel's SPA rewrite (`/((?!api/).*)` → `/index.html`) caught the resulting 404 and served HTML where JS was expected. Not a code bug — resolved client-side (hard refresh / unregister service worker); confirmed fixed and confirmed the actual production quiz flow (citation, grounding) working afterward.
+- **Two review findings turned out to be stale on inspection**, not fixed: (a) `backups/{uid}` Firestore rules lack schema validation like `userSettings/{uid}` has — but `pullBackupFromCloud` already validates shape client-side via `isBackupPayload` before trusting cloud data, so a malformed write is already neutralized on read; adding rules-level validation for a 9-field nested payload would be real complexity against an already-mitigated, self-inflicted-only risk. (b) The reviewing agent's claim of ~20 docs still referencing Cloudflare/Wrangler/Gemini was based on a `docs/01-06`/`09-SPECS` structure that no longer exists (already consolidated into the current 7 docs); the only two remaining Cloudflare/Gemini mentions are in `ARCHITECTURE.md`'s own intentional "why we switched" sections. Similarly, the claimed PRD/SECURITY.md mismatch on preference auto-sync was already correctly covered by a separate Epic H3 the reviewing agent had missed.
+
+**Decisions**
+
+| Decision                                                                                  | Where                                    |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------- |
+| Grounding validates quote text, not just chunkId                                           | `api/_lib/services/grounding.service.ts`  |
+| `IP_HASH_SALT` unset is a hard failure, not a degraded hash                                 | `api/_lib/http/security.ts`, `api/generate.ts` |
+| Epic C1 marked deferred in the PRD rather than silently dropped                             | `docs/PRD.md`                             |
+| `typescript` held at 6.0.3, not the new native 7.0.2 compiler                               | `package.json`                            |
+| `@vitejs/plugin-react` held at 5.2.0, not 6.x (broken optional peer chain)                  | `package.json`                            |
+| Reset-on-id-change effects replaced with `key`-based remounts, not left as flagged effects  | `Flashcard.tsx`, `QuestionCard.tsx`, callers |
+| `use-cloud-sync.ts`'s auth-sync effect kept as-is with a scoped `eslint-disable`, not rearchitected | `src/hooks/use-cloud-sync.ts`       |
+| `backups/{uid}` Firestore rules left unvalidated — already mitigated client-side            | `firestore.rules`, `src/persistence/sync.ts` |
+
+**Verified**
+
+- `npm run typecheck`, `npm run lint`, `npm test` (220 tests, up from 210), and `npm run build` all green after every step, not just at the end.
+- Browser checks via Playwright MCP after each risky change: marketing page and `/app` route console-clean after the react-router bump; "Three things out of one file" section renders correctly after the copy cut; final full loop clean after the dependency refresh.
+- Live production checks after deploy: quiz flow generates questions with real page citations (grounding fix confirmed live), marketing page confirmed live, service-worker MIME issue confirmed resolved.
+- PDF parsing (`pdfjs-dist` 4→6, the highest-risk bump) verified at the type level only — strict typecheck passes clean against v6's real declarations for every API surface `pdf.ts` calls — but not exercised end-to-end in-browser, since `/app/*` is gated behind Google sign-in that couldn't be scripted around. User owns a real-PDF-upload check.
+
+**Status**
+Done and deployed. All 15 original findings closed (fixed, verified-no-action-needed, or determined stale) plus the full "everything" dependency refresh on top.
+
+**Next action**
+None required. Optional housekeeping only: set `BURST_IP_LIMIT`/`BURST_GLOBAL_LIMIT` explicitly in the Vercel dashboard (currently silently defaulting to 10/60).
+
+**Blockers**
+None.
+
+---
+
 ## 2026-08-01 — Zero-cost backend hardening: MVC reorg, validation, rate limiting, observability, quota UI
 
 **Done**

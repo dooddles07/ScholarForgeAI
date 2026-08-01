@@ -97,9 +97,8 @@ sync.
 
 ## Documentation
 
-Seven documents in `docs/`, plus `README.md`, `CHANGELOG.md`, and `MIT.md` at the root. There are
-no other documentation files, and new ones should not be created — extend the relevant document
-instead.
+Eight documents in `docs/`, plus `README.md` and `MIT.md` at the root. There are no other
+documentation files, and new ones should not be created — extend the relevant document instead.
 
 | Document                                     | Covers                                                                 |
 | -------------------------------------------- | ---------------------------------------------------------------------- |
@@ -110,6 +109,7 @@ instead.
 | [docs/RULES.md](docs/RULES.md)               | Coding standards, testing strategy, git workflow, definition of done   |
 | [docs/SECURITY.md](docs/SECURITY.md)         | Privacy posture, threat model, rate limiting, CSP                      |
 | [docs/ACTIVITY-LOG.md](docs/ACTIVITY-LOG.md) | Running record of work and current state                               |
+| [docs/CHANGELOG.md](docs/CHANGELOG.md)       | Released, user-facing changes                                          |
 
 `ACTIVITY-LOG.md` is a point-in-time record: entries describe what was true when written and are
 not edited afterwards, so some reference documents that have since been consolidated away.

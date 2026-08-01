@@ -139,10 +139,12 @@ without resetting. Repeatedly failed cards are flagged as leeches.
 
 ### Epic C — Understanding
 
-**C1. Get something explained.** Triggerable from selected text, from a topic in the outline, and
-from a quiz answer. Three depths: Simple, Normal, Deep. Switching depth does not lose the previous
-version. Source pages cited. If the document does not cover the topic, the response says so rather
-than answering from general knowledge. Explanations are saveable and readable offline.
+**C1. Get something explained. Deferred, not shipped.** Specified as triggerable from selected
+text, from a topic in the outline, and from a quiz answer, with three depths (Simple, Normal,
+Deep) and saveable, offline-readable output. `ai/client.ts` has no `explain` kind and the API
+never accepted one; marketing copy referencing it was removed rather than left describing a
+feature that does not exist. Revisit as a real epic if it turns out to matter, rather than leaving
+it half-specified here.
 
 **C2. Ask questions about the document.** Chat scoped to a document or study set. Answers carry
 inline page references that open the source passage. When the document lacks the answer, the reply

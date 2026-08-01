@@ -216,7 +216,7 @@ a fallback provider — the answer is never to buy capacity.
 | [RULES.md](docs/RULES.md)               | Coding standards, testing, git workflow, definition of done |
 | [SECURITY.md](docs/SECURITY.md)         | Privacy posture, threat model, rate limiting, CSP           |
 | [ACTIVITY-LOG.md](docs/ACTIVITY-LOG.md) | What has been done, and where things stand                  |
-| [CHANGELOG.md](CHANGELOG.md)            | Released changes                                            |
+| [CHANGELOG.md](docs/CHANGELOG.md)       | Released changes                                            |
 
 The planning is public, not just the code. If you disagree with a decision, the reasoning is there
 to argue with.

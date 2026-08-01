@@ -34,6 +34,9 @@ than tagged releases.
 - **A large library failed to sync with no explanation.** It now says so before trying, and points
   at file export, which has no size limit.
 - The default theme is "match my device" rather than dark.
+- A generated citation could quote text that was never actually on the page it cited, as long as
+  it named a page we really sent. The quote is now checked against the real page text, not just
+  the page number.
 
 ### Changed
 
@@ -45,6 +48,10 @@ than tagged releases.
 
 - Cloud storage rules now reject malformed or oversized writes, not just writes from the wrong
   account.
+- If the server's IP-hashing salt is ever missing, generation now refuses outright instead of
+  falling back to an unsalted (reversible) hash.
+- Updated `react-router` past a disclosed CSRF advisory (GHSA-qwww-vcr4-c8h2). Not exploitable
+  here — the app never runs React Router in RSC mode — patched anyway.
 
 ## 2026-07-31 — Groq, and the end of bring-your-own-key
 

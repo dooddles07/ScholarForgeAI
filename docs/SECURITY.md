@@ -124,7 +124,9 @@ Six layers, applied cheapest first:
 **Origin check.** Accepted only when `Origin` matches `ALLOWED_ORIGIN`. A low bar — `Origin` is
 trivially forged outside a browser — worth having because it stops the laziest case at zero cost.
 Not a security boundary and not treated as one. **When `ALLOWED_ORIGIN` is unset the check is
-skipped entirely**, so it must be set in production.
+skipped entirely**, so it must be set in production. A cold-start log (`ALLOWED_ORIGIN_UNSET`)
+fires once per function instance when it is unset in `VERCEL_ENV=production`, so a forgotten
+variable shows up in logs instead of staying silent.
 
 **Kill switch.** An Upstash Redis flag checked on every request; when set, generation returns
 `SERVICE_DISABLED`. Exists so a problem can be stopped in seconds without a deployment. There is no
@@ -141,7 +143,10 @@ the "come back tomorrow" quota message. Defaults `BURST_IP_LIMIT=10`, `BURST_GLO
 **Per-IP daily limit.** A counter keyed `ip:<sha256(ip + salt)>:<YYYY-MM-DD>`, TTL 48 hours. The IP
 is hashed with a server-only salt rather than stored, and the key expires automatically — we never
 hold a plaintext address. Set generously via `DAILY_IP_LIMIT`, because a false positive is worse
-than a small amount of over-use.
+than a small amount of over-use. **`IP_HASH_SALT` fails closed:** the hashing function throws if
+it is unset, which `/api/generate` turns into `SERVICE_UNAVAILABLE` before an IP is ever hashed —
+an unsalted hash would be trivially reversible over the whole IPv4 space, so a missing salt refuses
+requests rather than silently degrading to that.
 
 **Global daily ceiling.** One counter for the whole project, set _below_ the provider's real daily
 limit so we fail with our own honest message instead of an opaque provider 429. `DAILY_GLOBAL_LIMIT`
