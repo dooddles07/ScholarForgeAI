@@ -3,7 +3,7 @@ import type { Attempt } from '@/domain/types';
 /*
  * Hand-written SVG rather than a charting library. This is one polyline and a baseline; recharts
  * would cost more in bundle weight than the whole dashboard route. Resolves the charting question
- * left open in docs/06-PLANNING/OPEN-QUESTIONS.md.
+ * left open in docs/PRD.md.
  */
 export function AccuracyTrend({
   attempts,

@@ -36,10 +36,14 @@ describe('local data warning', () => {
     });
   });
 
+  /* The live query resolves after the first paint, so the warning renders from the default row
+     for a frame before the stored flag arrives. */
   it('does not reappear on a later visit', async () => {
     await updateSettings({ hasSeenLocalDataWarning: true });
     await renderZone();
-    expect(screen.queryByText(storage.firstRun)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(storage.firstRun)).not.toBeInTheDocument();
+    });
   });
 });
 

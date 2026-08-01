@@ -1,4 +1,4 @@
-/* App strings. Verbatim from docs/02-DESIGN/CONTENT-AND-COPY-GUIDE.md. */
+/* App strings. Verbatim from docs/DESIGN.md. */
 
 export const nav = {
   library: 'Library',

@@ -1,4 +1,4 @@
-/* Shared domain types. Mirrors docs/03-ARCHITECTURE/DATA-MODEL.md. */
+/* Shared domain types. Mirrors docs/SCHEMA.md. */
 
 export type DocumentFormat = 'pdf' | 'pptx' | 'docx' | 'epub' | 'text';
 export type QuestionType = 'mcq' | 'trueFalse' | 'shortAnswer' | 'fillBlank';

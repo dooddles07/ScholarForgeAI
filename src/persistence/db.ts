@@ -13,7 +13,7 @@ import type {
 } from '@/domain/types';
 
 /*
- * Version 1 from docs/03-ARCHITECTURE/DATA-MODEL.md. Versions are never edited after release:
+ * Version 1 from docs/SCHEMA.md. Versions are never edited after release:
  * users have data written under the old shape and there is no server copy to fall back on.
  */
 export const db = new Dexie('scholarforge') as Dexie & {
