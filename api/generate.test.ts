@@ -188,7 +188,7 @@ describe('handler', () => {
       logSpy.mockRestore();
     });
 
-    it('does not log request_succeeded when grounding throws after a successful Groq call', async () => {
+    it('maps a grounding throw to INTERNAL_ERROR, not PROVIDER_ERROR, after a successful Groq call', async () => {
       vi.mocked(checkAndConsumeQuota).mockResolvedValue({
         ok: true,
         reason: 'OK',
@@ -200,17 +200,21 @@ describe('handler', () => {
       });
       process.env.GROQ_API_KEY = 'test-key';
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const res = makeRes();
       await handler(makeReq(), res);
       const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
       expect(logged).not.toContain('request_succeeded');
-      expect(logged).toContain('request_failed');
-      expect(res.statusCode).toBe(502);
-      expect(res.body).toEqual({ error: 'PROVIDER_ERROR' });
+      // A grounding bug is our own code failing, not Groq -- distinct from PROVIDER_ERROR so the
+      // per-code counters can tell "we shipped a bug" apart from "Groq had an outage".
+      expect(errorSpy.mock.calls[0]?.[0] as string).toContain('INTERNAL_ERROR');
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toEqual({ error: 'INTERNAL_ERROR' });
       logSpy.mockRestore();
+      errorSpy.mockRestore();
     });
 
-    it('does not log request_succeeded when grounding throws on the chat branch', async () => {
+    it('maps a grounding throw to INTERNAL_ERROR on the chat branch too', async () => {
       vi.mocked(checkAndConsumeQuota).mockResolvedValue({
         ok: true,
         reason: 'OK',
@@ -222,10 +226,30 @@ describe('handler', () => {
       });
       process.env.GROQ_API_KEY = 'test-key';
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
       const res = makeRes();
       await handler(makeReq({ body: { kind: 'chat', chunks: [validChunk], question: 'q' } }), res);
       const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
       expect(logged).not.toContain('request_succeeded');
+      expect(errorSpy.mock.calls[0]?.[0] as string).toContain('INTERNAL_ERROR');
+      expect(res.statusCode).toBe(500);
+      expect(res.body).toEqual({ error: 'INTERNAL_ERROR' });
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+
+    it('still maps a genuine Groq failure to PROVIDER_ERROR', async () => {
+      vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+        ok: true,
+        reason: 'OK',
+        remaining: 12,
+      } as never);
+      vi.mocked(callGroq).mockRejectedValue(new Error('groq down'));
+      process.env.GROQ_API_KEY = 'test-key';
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handler(makeReq(), res);
+      const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
       expect(logged).toContain('request_failed');
       expect(res.statusCode).toBe(502);
       expect(res.body).toEqual({ error: 'PROVIDER_ERROR' });

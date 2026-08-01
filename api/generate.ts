@@ -123,34 +123,9 @@ async function handleGenerate(
     return;
   }
 
+  let result: RawQuestionItem[] | RawCardItem[] | RawChatResult;
   try {
-    const result = await callGroq(body, apiKey);
-
-    // Grounding runs before the success log, not after: if it threw, the request did not
-    // actually succeed, and the log line has to match what the client received (the catch
-    // below), not what happened before it.
-    if (body.kind === 'chat') {
-      const grounded = groundChat(result as RawChatResult, body.chunks);
-      logEvent('request_succeeded', {
-        kind: body.kind,
-        ipHash,
-        status: 200,
-        quotaRemaining: quota.remaining,
-        ms: Date.now() - start,
-      });
-      res.status(200).json({ ...grounded, quotaRemaining: quota.remaining });
-      return;
-    }
-
-    const items = groundItems(result as RawQuestionItem[] | RawCardItem[], body.chunks);
-    logEvent('request_succeeded', {
-      kind: body.kind,
-      ipHash,
-      status: 200,
-      quotaRemaining: quota.remaining,
-      ms: Date.now() - start,
-    });
-    res.status(200).json({ items, quotaRemaining: quota.remaining });
+    result = await callGroq(body, apiKey);
   } catch (error) {
     const status = error instanceof ProviderError ? error.status : 502;
     const mappedStatus = status >= 500 ? 502 : status;
@@ -163,5 +138,32 @@ async function handleGenerate(
     });
     await incrementErrorCounter('PROVIDER_ERROR');
     res.status(mappedStatus).json({ error: 'PROVIDER_ERROR' });
+    return;
   }
+
+  // Grounding is intentionally outside the try/catch above: a throw here is our own bug, not a
+  // Groq failure, so it should fall through to the outer catch-all (INTERNAL_ERROR) rather than
+  // be mislabeled PROVIDER_ERROR -- the two mean different things for error-rate monitoring.
+  if (body.kind === 'chat') {
+    const grounded = groundChat(result as RawChatResult, body.chunks);
+    logEvent('request_succeeded', {
+      kind: body.kind,
+      ipHash,
+      status: 200,
+      quotaRemaining: quota.remaining,
+      ms: Date.now() - start,
+    });
+    res.status(200).json({ ...grounded, quotaRemaining: quota.remaining });
+    return;
+  }
+
+  const items = groundItems(result as RawQuestionItem[] | RawCardItem[], body.chunks);
+  logEvent('request_succeeded', {
+    kind: body.kind,
+    ipHash,
+    status: 200,
+    quotaRemaining: quota.remaining,
+    ms: Date.now() - start,
+  });
+  res.status(200).json({ items, quotaRemaining: quota.remaining });
 }
