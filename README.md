@@ -33,7 +33,6 @@ nothing.
 | **Upload**            | PDF, PowerPoint, Word, EPUB, text, Markdown                                                    |
 | **Quizzes**           | Multiple choice, true/false, short answer, fill-in-the-blank — instant feedback, page citation |
 | **Flashcards**        | Auto-generated, editable, swipeable, with cloze deletion                                       |
-| **Explanations**      | Any concept, at three depths from simple to exam-ready                                         |
 | **Exam generator**    | A full practice exam plus a separate answer key, printable                                     |
 | **Spaced repetition** | Cards come back on a schedule based on what you forget                                         |
 | **Ask your document** | Chat with your file; answers cite exact page numbers                                           |
