@@ -88,12 +88,16 @@ async function handleGenerate(req: VercelRequest, res: VercelResponse): Promise<
     const result = await callGroq(body, apiKey);
 
     if (body.kind === 'chat') {
-      res.status(200).json(groundChat(result as RawChatResult, body.chunks));
+      res.status(200).json({
+        ...groundChat(result as RawChatResult, body.chunks),
+        quotaRemaining: quota.remaining,
+      });
       return;
     }
 
     res.status(200).json({
       items: groundItems(result as RawQuestionItem[] | RawCardItem[], body.chunks),
+      quotaRemaining: quota.remaining,
     });
   } catch (error) {
     const status = error instanceof ProviderError ? error.status : 502;

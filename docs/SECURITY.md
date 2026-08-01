@@ -178,9 +178,10 @@ design, and it is worth stating plainly rather than burying: popularity now degr
 for everyone instead of routing around itself. The limits are set generously against Groq's
 1,000 requests/day to push that wall out, but they do not remove it.
 
-**Warning before the wall is not built.** No `quotaRemaining` value exists in any response, so the
-interface cannot warn a user before they hit zero — they find out when a request fails. A real gap,
-not a design choice.
+**Warning before the wall.** Every successful generate response carries `quotaRemaining`: the
+caller's per-IP daily allowance left after that request. `src/ai/client.ts` exposes it via an
+optional `onQuotaRemaining` callback on `GenerateOptions`, so the UI can warn a user before they
+hit zero instead of only finding out when a request fails.
 
 ### Deliberately not used
 

@@ -111,4 +111,32 @@ describe('handler', () => {
     expect(res.statusCode).toBe(502);
     expect(res.body).toEqual({ error: 'PROVIDER_ERROR' });
   });
+
+  it('includes quotaRemaining in a successful items response', async () => {
+    vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+      ok: true,
+      reason: 'OK',
+      remaining: 12,
+    } as never);
+    vi.mocked(callGroq).mockResolvedValue([]);
+    process.env.GROQ_API_KEY = 'test-key';
+    const res = makeRes();
+    await handler(makeReq(), res);
+    expect(res.statusCode).toBe(200);
+    expect((res.body as { quotaRemaining: number }).quotaRemaining).toBe(12);
+  });
+
+  it('includes quotaRemaining in a successful chat response', async () => {
+    vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+      ok: true,
+      reason: 'OK',
+      remaining: 7,
+    } as never);
+    vi.mocked(callGroq).mockResolvedValue({ content: '', citations: [] });
+    process.env.GROQ_API_KEY = 'test-key';
+    const res = makeRes();
+    await handler(makeReq({ body: { kind: 'chat', chunks: [validChunk], question: 'q' } }), res);
+    expect(res.statusCode).toBe(200);
+    expect((res.body as { quotaRemaining: number }).quotaRemaining).toBe(7);
+  });
 });

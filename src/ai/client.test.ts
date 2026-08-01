@@ -88,3 +88,40 @@ describe('mock mode failure injection', () => {
     await expect(run(() => generateQuestions(doc, 2))).rejects.toThrow(/Unknown VITE_MOCK_FAILURE/);
   });
 });
+
+describe('real proxy mode', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('invokes onQuotaRemaining when the proxy response carries the field', async () => {
+    vi.stubEnv('VITE_MOCK_AI', 'false');
+    vi.resetModules();
+    const { generateQuestions: realGenerateQuestions } = await import('./client');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ items: [], quotaRemaining: 5 }),
+      }),
+    );
+    const onQuotaRemaining = vi.fn();
+    await realGenerateQuestions(doc, 2, {}, { onQuotaRemaining });
+    expect(onQuotaRemaining).toHaveBeenCalledWith(5);
+    vi.resetModules();
+  });
+
+  it('does not invoke onQuotaRemaining when the field is absent', async () => {
+    vi.stubEnv('VITE_MOCK_AI', 'false');
+    vi.resetModules();
+    const { generateQuestions: realGenerateQuestions } = await import('./client');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) }),
+    );
+    const onQuotaRemaining = vi.fn();
+    await realGenerateQuestions(doc, 2, {}, { onQuotaRemaining });
+    expect(onQuotaRemaining).not.toHaveBeenCalled();
+    vi.resetModules();
+  });
+});

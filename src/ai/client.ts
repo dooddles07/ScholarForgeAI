@@ -22,6 +22,9 @@ import { generateCardsFromChunks, generateQuestionsFromChunks } from './mock/gen
 
 export interface GenerateOptions {
   signal?: AbortSignal;
+  /* Fired with the caller's remaining daily quota after a successful proxy call, so the UI can
+     warn before the wall is hit rather than only after. Not called in mock mode or on failure. */
+  onQuotaRemaining?: (remaining: number) => void;
 }
 
 /* Opt-in rather than tied to import.meta.env.DEV: a dev server that can never reach the real
@@ -114,6 +117,7 @@ async function callProxy(
   const data = await response.json().catch(() => ({}));
   if (!response.ok)
     throw new ProxyError(typeof data.error === 'string' ? data.error : 'PROVIDER_ERROR');
+  if (typeof data.quotaRemaining === 'number') options.onQuotaRemaining?.(data.quotaRemaining);
   return data;
 }
 
