@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import type * as GroqService from './_lib/services/groq.service.js';
+import type * as GroundingService from './_lib/services/grounding.service.js';
 
 vi.mock('./_lib/services/quota.service.js', () => ({
   checkAndConsumeQuota: vi.fn(),
@@ -10,9 +11,14 @@ vi.mock('./_lib/services/groq.service.js', async (importOriginal) => {
   const actual = await importOriginal<typeof GroqService>();
   return { ...actual, callGroq: vi.fn() };
 });
+vi.mock('./_lib/services/grounding.service.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof GroundingService>();
+  return { ...actual, groundItems: vi.fn(actual.groundItems), groundChat: vi.fn(actual.groundChat) };
+});
 
 import { checkAndConsumeQuota, incrementErrorCounter } from './_lib/services/quota.service.js';
 import { callGroq } from './_lib/services/groq.service.js';
+import { groundItems } from './_lib/services/grounding.service.js';
 import handler from './generate.js';
 
 const original = { ...process.env };
@@ -177,6 +183,28 @@ describe('handler', () => {
       expect(logged).toContain('request_succeeded');
       expect(logged).not.toContain('203.0.113.5');
       expect(logged).not.toContain(validChunk.text);
+      logSpy.mockRestore();
+    });
+
+    it('does not log request_succeeded when grounding throws after a successful Groq call', async () => {
+      vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+        ok: true,
+        reason: 'OK',
+        remaining: 12,
+      } as never);
+      vi.mocked(callGroq).mockResolvedValue([]);
+      vi.mocked(groundItems).mockImplementationOnce(() => {
+        throw new Error('grounding blew up');
+      });
+      process.env.GROQ_API_KEY = 'test-key';
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handler(makeReq(), res);
+      const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
+      expect(logged).not.toContain('request_succeeded');
+      expect(logged).toContain('request_failed');
+      expect(res.statusCode).toBe(502);
+      expect(res.body).toEqual({ error: 'PROVIDER_ERROR' });
       logSpy.mockRestore();
     });
 
