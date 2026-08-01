@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { Question } from '@/domain/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/components/primitives/Button';
@@ -9,11 +9,10 @@ interface QuestionCardProps {
   onAnswer: (value: string) => void;
 }
 
-/* One question per screen, no exceptions. Options are 56px tall: a mis-tap costs the question. */
+/* One question per screen, no exceptions. Options are 56px tall: a mis-tap costs the question.
+   Keyed by question.id at the call site so a new question remounts with fresh state. */
 export function QuestionCard({ question, onAnswer }: QuestionCardProps) {
   const [selected, setSelected] = useState<string>('');
-
-  useEffect(() => setSelected(''), [question.id]);
 
   const options =
     question.type === 'mcq'

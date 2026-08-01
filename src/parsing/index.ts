@@ -46,8 +46,8 @@ export async function parseFile(
 
   onProgress({ stage: 'reading' });
 
-  let pages: PageText[] = [];
-  let pageCount = 0;
+  let pages: PageText[];
+  let pageCount: number;
   let title: string | null = null;
   let outline: StoredDocument['outline'] = [];
   const warnings: string[] = [];

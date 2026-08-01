@@ -38,19 +38,22 @@ export default function ParsePage() {
   useAppearance();
   const navigate = useNavigate();
   const abortRef = useRef<AbortController | null>(null);
-  const [state, setState] = useState<State>({ kind: 'nothing' });
+  // Lazy initializer, so the first render already reflects a pending file instead of flashing
+  // "nothing" and correcting itself once the effect below runs.
+  const [state, setState] = useState<State>(() => {
+    const file = peekPendingFile();
+    return file
+      ? { kind: 'working', fileName: file.name, progress: { stage: 'reading' } }
+      : { kind: 'nothing' };
+  });
   const saveDocument = useSaveDocument();
 
   useEffect(() => {
     const file = peekPendingFile();
-    if (!file) {
-      setState({ kind: 'nothing' });
-      return undefined;
-    }
+    if (!file) return undefined;
 
     const controller = new AbortController();
     abortRef.current = controller;
-    setState({ kind: 'working', fileName: file.name, progress: { stage: 'reading' } });
 
     parseFile(
       file,

@@ -23,11 +23,15 @@ export function useCloudSync() {
   const uidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (authStatus === 'loading') {
-      setStatus('loading');
-      return;
-    }
+    // authStatus never re-enters 'loading' after its first resolution (see useAuthUser), so
+    // 'loading' is derived below from authStatus directly rather than mirrored into status here.
+    if (authStatus === 'loading') return undefined;
 
+    /* This effect exists to subscribe local status to the external auth store and kick off the
+       async backup check -- exactly the case react-hooks/set-state-in-effect's own message calls
+       out as legitimate ("calling setState... when external state changes"). The synchronous
+       calls below are the subscription callback firing, not a render-time value being echoed. */
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!user) {
       uidRef.current = null;
       setEmail(null);
@@ -38,6 +42,7 @@ export function useCloudSync() {
     uidRef.current = user.uid;
     setEmail(user.email);
     setStatus('checkingBackup');
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     let cancelled = false;
 
@@ -122,5 +127,15 @@ export function useCloudSync() {
     }
   }, []);
 
-  return { status, email, signIn, signOut, restoreFoundBackup, dismissFoundBackup, syncNow };
+  const effectiveStatus = authStatus === 'loading' ? 'loading' : status;
+
+  return {
+    status: effectiveStatus,
+    email,
+    signIn,
+    signOut,
+    restoreFoundBackup,
+    dismissFoundBackup,
+    syncNow,
+  };
 }

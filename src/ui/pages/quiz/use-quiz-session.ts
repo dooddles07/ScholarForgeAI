@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { Question, QuizConfig, Response, StoredDocument } from '@/domain/types';
 import { checkAnswer } from '@/domain/quiz/answer-matching';
 import { scoreQuiz, type QuizScore } from '@/domain/quiz/scoring';
@@ -21,8 +21,11 @@ export function useQuizSession(doc: StoredDocument | undefined) {
   const [error, setError] = useState<string | null>(null);
   /* Asked-for count, so a short result can be explained rather than looking like a bug. */
   const [requested, setRequested] = useState(0);
-  const startedAt = useRef(Date.now());
-  const questionStartedAt = useRef(Date.now());
+  /* State rather than a ref: a ref cannot be read or lazily initialized during render under the
+     current rules, and each reset here already lands beside a phase/index update that would
+     re-render anyway, so there is no perf case for a ref. The lazy initializer runs once. */
+  const [startedAt, setStartedAt] = useState(() => Date.now());
+  const [questionStartedAt, setQuestionStartedAt] = useState(() => Date.now());
 
   const start = useCallback(
     async (config: QuizConfig) => {
@@ -38,8 +41,8 @@ export function useQuizSession(doc: StoredDocument | undefined) {
         setQuestions(generated.map(shuffleOptions));
         setIndex(0);
         setResponses([]);
-        startedAt.current = Date.now();
-        questionStartedAt.current = Date.now();
+        setStartedAt(Date.now());
+        setQuestionStartedAt(Date.now());
         setPhase('question');
       } catch (err) {
         setError(generationErrorMessage(err));
@@ -60,16 +63,16 @@ export function useQuizSession(doc: StoredDocument | undefined) {
           answer: value,
           isCorrect: checkAnswer(question, value),
           answeredAt: Date.now(),
-          timeSpentMs: Date.now() - questionStartedAt.current,
+          timeSpentMs: Date.now() - questionStartedAt,
         },
       ]);
       void recordStudyDay();
     },
-    [index, questions, recordStudyDay],
+    [index, questions, questionStartedAt, recordStudyDay],
   );
 
   const next = useCallback(() => {
-    questionStartedAt.current = Date.now();
+    setQuestionStartedAt(Date.now());
     if (index + 1 >= questions.length) {
       setPhase('results');
       if (doc) {
@@ -77,17 +80,17 @@ export function useQuizSession(doc: StoredDocument | undefined) {
           id: crypto.randomUUID(),
           kind: 'quiz',
           sourceId: doc.id,
-          startedAt: startedAt.current,
+          startedAt,
           completedAt: Date.now(),
           responses,
           score: scoreQuiz(questions, responses).percent,
-          timeSpentMs: Date.now() - startedAt.current,
+          timeSpentMs: Date.now() - startedAt,
         });
       }
       return;
     }
     setIndex(index + 1);
-  }, [doc, index, questions, responses, saveAttempt]);
+  }, [doc, index, questions, responses, saveAttempt, startedAt]);
 
   /* Flagging excludes the question from scoring rather than deleting it. */
   const flag = useCallback(() => {
@@ -105,8 +108,8 @@ export function useQuizSession(doc: StoredDocument | undefined) {
       setQuestions(missed.map(shuffleOptions));
       setIndex(0);
       setResponses([]);
-      startedAt.current = Date.now();
-      questionStartedAt.current = Date.now();
+      setStartedAt(Date.now());
+      setQuestionStartedAt(Date.now());
       setPhase('question');
     },
     [questions],
@@ -127,7 +130,7 @@ export function useQuizSession(doc: StoredDocument | undefined) {
     error,
     shortfall: Math.max(0, requested - questions.length),
     score: () => scoreQuiz(questions, responses),
-    elapsedMs: () => Date.now() - startedAt.current,
+    elapsedMs: () => Date.now() - startedAt,
     start,
     answer,
     next,

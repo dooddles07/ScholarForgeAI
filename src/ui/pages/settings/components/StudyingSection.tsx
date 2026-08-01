@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSettings } from '@/hooks/use-settings';
 import { DAILY_CARD_LIMIT_MAX, DAILY_CARD_LIMIT_MIN } from '@/domain/settings/synced';
 import { settings as copy } from '@/copy/labels';
@@ -7,12 +7,15 @@ import { Group, Row, Toggle } from './SettingsPrimitives';
 export function StudyingSection() {
   const { settings, update } = useSettings();
   /* Held as a draft so the field can be empty mid-edit without a 0 reaching the review session,
-     and so a value arriving from another device is not overwritten by a half-typed one. */
+     and so a value arriving from another device is not overwritten by a half-typed one. Adjusted
+     during render rather than in an effect, per React's "storing information from previous
+     renders" pattern -- the prevLimit guard makes this idempotent, so it does not loop. */
   const [draft, setDraft] = useState(String(settings.dailyCardLimit));
-
-  useEffect(() => {
+  const [prevLimit, setPrevLimit] = useState(settings.dailyCardLimit);
+  if (settings.dailyCardLimit !== prevLimit) {
+    setPrevLimit(settings.dailyCardLimit);
     setDraft(String(settings.dailyCardLimit));
-  }, [settings.dailyCardLimit]);
+  }
 
   function commit() {
     void update({ dailyCardLimit: Number(draft) });

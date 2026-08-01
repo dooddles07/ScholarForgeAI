@@ -21,10 +21,10 @@ const RATING_LABELS: Record<Rating, string> = {
   4: flashcards.easy,
 };
 
+/* Keyed by card.id at the call site so a new card remounts with fresh state, rather than
+   resetting flipped via an effect. */
 export function Flashcard({ card, onRate }: { card: Card; onRate: (rating: Rating) => void }) {
   const [flipped, setFlipped] = useState(false);
-
-  useEffect(() => setFlipped(false), [card.id]);
 
   /* Space flips, 1 to 4 rate. Rating keys only work once the answer is visible. */
   useEffect(() => {

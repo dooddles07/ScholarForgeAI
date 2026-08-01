@@ -95,7 +95,7 @@ export default function QuizPage() {
               onFlag={session.flag}
             />
           ) : (
-            <QuestionCard question={current} onAnswer={session.answer} />
+            <QuestionCard key={current.id} question={current} onAnswer={session.answer} />
           )}
         </div>
       </div>

@@ -41,7 +41,7 @@ export function ReviewSession({ cards, onDone, doneAction }: ReviewSessionProps)
         {flashcards.progress(index + 1, cards.length)}
       </p>
       <div className="mt-4">
-        <Flashcard card={card} onRate={(rating) => void rate(rating)} />
+        <Flashcard key={card.id} card={card} onRate={(rating) => void rate(rating)} />
       </div>
     </div>
   );
