@@ -18,7 +18,7 @@ vi.mock('./_lib/services/grounding.service.js', async (importOriginal) => {
 
 import { checkAndConsumeQuota, incrementErrorCounter } from './_lib/services/quota.service.js';
 import { callGroq } from './_lib/services/groq.service.js';
-import { groundItems } from './_lib/services/grounding.service.js';
+import { groundChat, groundItems } from './_lib/services/grounding.service.js';
 import handler from './generate.js';
 
 const original = { ...process.env };
@@ -200,6 +200,28 @@ describe('handler', () => {
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
       const res = makeRes();
       await handler(makeReq(), res);
+      const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
+      expect(logged).not.toContain('request_succeeded');
+      expect(logged).toContain('request_failed');
+      expect(res.statusCode).toBe(502);
+      expect(res.body).toEqual({ error: 'PROVIDER_ERROR' });
+      logSpy.mockRestore();
+    });
+
+    it('does not log request_succeeded when grounding throws on the chat branch', async () => {
+      vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+        ok: true,
+        reason: 'OK',
+        remaining: 12,
+      } as never);
+      vi.mocked(callGroq).mockResolvedValue({ content: '', citations: [] });
+      vi.mocked(groundChat).mockImplementationOnce(() => {
+        throw new Error('grounding blew up');
+      });
+      process.env.GROQ_API_KEY = 'test-key';
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+      const res = makeRes();
+      await handler(makeReq({ body: { kind: 'chat', chunks: [validChunk], question: 'q' } }), res);
       const logged = logSpy.mock.calls.map((call) => call[0] as string).join('\n');
       expect(logged).not.toContain('request_succeeded');
       expect(logged).toContain('request_failed');
