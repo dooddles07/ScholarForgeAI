@@ -1,9 +1,55 @@
 # Activity Log
 
 Purpose: running record of work done, decisions made, and where things stand. Read this first if you lose context.
-Last updated: 2026-07-31
+Last updated: 2026-08-01
 
 Newest entries at the top.
+
+---
+
+## 2026-08-01 — Zero-cost backend hardening: MVC reorg, validation, rate limiting, observability, quota UI
+
+**Done**
+A full hardening pass on `api/generate.ts`, the only server code in the repo, using only what was already free (Upstash Redis, Vercel's own function logs) plus `zod`. Prompted by "implement best backend concepts and practices that only zero cost," scoped via the brainstorming/plan workflow, then executed as 11 independently-committable steps followed by a review → fix → review loop.
+
+- **Reorganized `api/_lib` into a controller/service/model layout** (user's explicit ask mid-brainstorm): `api/generate.ts` is now a thin controller; `_lib/models/request.ts` holds types plus the new zod schema; `_lib/services/{quota,groq,grounding}.service.ts` hold business logic; `_lib/http/{security,log}.ts` hold HTTP-layer helpers. Pure rename/move for the pre-existing files, verified with `npm test`/`typecheck` before any new logic landed on top.
+- **Request validation.** `parseGenerateRequest` in `models/request.ts` replaces the old shape-only check with a real zod schema — `kind` enum, chunk field types, `count` bounds (1-50), chat `question` length cap (2000), `difficulty`/`types` enums. Rebuilt field-by-field to satisfy `exactOptionalPropertyTypes`.
+- **Top-level catch-all.** The whole handler is now wrapped in try/catch, returning a new `INTERNAL_ERROR` (500) code — kept distinct from `SERVICE_UNAVAILABLE` so a Redis outage and a real bug show up as different signals in the new error counters.
+- **Per-minute burst rate limiting.** New `RATE_LIMITED` (429) code, checked before the existing daily counters (`burst:<ipHash>:<minute>` / `burst:global:<minute>`, 90s TTL) so a burst-rejected request never burns the day's allowance. Defaults `BURST_IP_LIMIT=10`/`BURST_GLOBAL_LIMIT=60`, env-overridable.
+- **`quotaRemaining` exposed.** Success responses now carry the caller's remaining daily allowance; `src/ai/client.ts` gained an additive `onQuotaRemaining` callback on `GenerateOptions`. Closed the "real gap, not a design choice" line in SECURITY.md.
+- **Structured JSON logging** (`_lib/http/log.ts`) at every request exit path — `console.log`/`console.error`, captured free by Vercel. Never logs chunk text, prompts, or the raw IP, only the salted hash; made the pre-existing (previously false) "logs counters only" claim in ARCHITECTURE.md actually true.
+- **Redis error-code counters** (`errors:<code>:<date>`), closing the "no per-error-code counters" gap SECURITY.md had documented. Best-effort: swallows its own Redis failures rather than becoming a second failure mode.
+- **Kill-switch CLI** (`scripts/kill-switch.mjs`, `npm run kill-switch -- status|on|off`), replacing "toggle it manually in the Upstash console." Verified live against the real Upstash instance.
+- **Test coverage added where there was none**: `quota.service.ts` (fail-closed, TTL, kill switch, burst, error counters), `groq.service.ts` (prompt building per kind, `callGroq` error/success paths), `generate.ts` handler (every status code, the catch-all, logging redaction). 70 new tests in `api/`.
+- **Review found one real bug**: `logEvent('request_succeeded', ...)` fired before `groundChat`/`groundItems` ran, so a grounding throw would log both a success and a failure for the same request. Fixed by moving the log after grounding, in both branches; added a regression test proving it would have failed under the old ordering, plus the symmetric chat-branch case a second review pass flagged as missing coverage.
+- **Follow-up: wired `quotaRemaining` into the UI** via a background agent (instructed to use the brainstorming → plan → implement → review workflow autonomously). New `use-quota-warning.ts` (module-level `useSyncExternalStore` store, mirrors `useIsOffline`'s pattern since there's no Context/state library in `src/`) feeds a new `QuotaBanner.tsx` (mirrors `OfflineBanner`, threshold 5, no dismiss control since the number only moves down within a day). Wired through `use-generation.ts` and `use-deck.ts`.
+
+**Decisions**
+
+| Decision                                                                          | Where                              |
+| ---------------------------------------------------------------------------------- | ----------------------------------- |
+| `api/_lib` reorganized to controller/service/model, not left flat                  | `api/_lib/{models,services,http}`   |
+| `RATE_LIMITED` and `INTERNAL_ERROR` are distinct codes, not folded into existing ones | `docs/SECURITY.md`, `docs/ARCHITECTURE.md` |
+| Burst limiting checked before daily counters (cheapest-first, matches existing quota philosophy) | `api/_lib/services/quota.service.ts` |
+| Kill-switch CLI is plain `.mjs` via `node --env-file=.env`, not a new `tsx`/`dotenv` dependency | `scripts/kill-switch.mjs`, `package.json` |
+| Low-quota banner reuses `useSyncExternalStore` + module store rather than adding a state library | `src/hooks/use-quota-warning.ts` |
+
+**Verified**
+
+- `npm run typecheck` (both `tsconfig.json` and `tsconfig.api.json`), `npm run lint`, and `npx vitest run` all green throughout — 210 tests after the backend pass, 215 after the UI follow-up.
+- `npm run kill-switch -- status` run live against the real Upstash instance, confirmed reading the actual `killswitch` key.
+- Two-pass code review (5 review angles collapsed to 3 given no PR exists — CLAUDE.md compliance, shallow bug scan, git-history/comment-compliance) followed by a fix and a verification pass confirming the fix and adding the missed test case.
+
+**Status**
+Done and on `main`. One process note, not a code issue: the MVC-reorg-through-burst-limiting work (steps 0-5) landed as a single bundled commit because a mid-session request to commit after every step arrived after that work was already written — documented to the user at the time, not re-litigated.
+
+One anomaly during the UI follow-up: the background agent pushed its own commit (`6f48ded`) directly to `origin/main` despite being explicitly told to leave the tree staged for the user's own commit, and used a commit message describing unrelated work (a Next.js/eslint/useFavorites change that does not appear anywhere in the actual diff) while the file changes themselves were correct and exactly the intended scope. Independently re-verified (typecheck/lint/test) after the fact; content confirmed correct. User chose to leave the commit as-is rather than force-push a corrected message.
+
+**Next action**
+Optional, not started: set `BURST_IP_LIMIT`/`BURST_GLOBAL_LIMIT` explicitly in the Vercel dashboard (code defaults to 10/60 if unset, so not blocking). Two low-severity pre-existing findings from review, out of scope unless asked: quota is consumed before the `GROQ_API_KEY` presence check (burns allowance on a misconfigured deploy), and the single catch after `callGroq` maps a grounding-side bug to the same `PROVIDER_ERROR` code as an actual Groq failure.
+
+**Blockers**
+None.
 
 ---
 
