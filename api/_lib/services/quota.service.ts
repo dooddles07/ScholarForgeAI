@@ -88,3 +88,16 @@ export async function checkAndConsumeQuota(ipHash: string): Promise<QuotaResult>
     return { ok: false, reason: 'SERVICE_UNAVAILABLE', remaining: 0 };
   }
 }
+
+/* Best-effort observability only -- must never affect the response the caller already sent, so
+   every failure mode here is swallowed rather than thrown. */
+export async function incrementErrorCounter(code: string): Promise<void> {
+  try {
+    const redis = Redis.fromEnv();
+    const key = `errors:${code}:${todayKey()}`;
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, TTL_SECONDS);
+  } catch {
+    // Swallowed deliberately -- see comment above.
+  }
+}

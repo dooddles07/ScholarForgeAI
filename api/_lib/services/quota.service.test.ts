@@ -11,7 +11,7 @@ vi.mock('@upstash/redis', () => ({
 }));
 
 import { Redis } from '@upstash/redis';
-import { checkAndConsumeQuota } from './quota.service.js';
+import { checkAndConsumeQuota, incrementErrorCounter } from './quota.service.js';
 
 const original = { ...process.env };
 
@@ -150,5 +150,32 @@ describe('checkAndConsumeQuota', () => {
       .mockResolvedValueOnce(1);
     await checkAndConsumeQuota('hash');
     expect(redisMock.expire).toHaveBeenCalledWith(expect.stringContaining('burst:'), 90);
+  });
+});
+
+describe('incrementErrorCounter', () => {
+  it('increments a key scoped by code and date, setting TTL only on the first increment', async () => {
+    redisMock.incr.mockResolvedValueOnce(1);
+    await incrementErrorCounter('BAD_REQUEST');
+    expect(redisMock.incr).toHaveBeenCalledWith(expect.stringMatching(/^errors:BAD_REQUEST:\d{4}-\d{2}-\d{2}$/));
+    expect(redisMock.expire).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not re-set the TTL on subsequent increments', async () => {
+    redisMock.incr.mockResolvedValueOnce(4);
+    await incrementErrorCounter('BAD_REQUEST');
+    expect(redisMock.expire).not.toHaveBeenCalled();
+  });
+
+  it('resolves silently when Redis is unreachable, never throwing', async () => {
+    redisMock.incr.mockRejectedValueOnce(new Error('down'));
+    await expect(incrementErrorCounter('BAD_REQUEST')).resolves.toBeUndefined();
+  });
+
+  it('resolves silently when Redis.fromEnv throws', async () => {
+    vi.mocked(Redis.fromEnv).mockImplementationOnce(() => {
+      throw new Error('no creds');
+    });
+    await expect(incrementErrorCounter('BAD_REQUEST')).resolves.toBeUndefined();
   });
 });

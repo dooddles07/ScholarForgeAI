@@ -4,13 +4,14 @@ import type * as GroqService from './_lib/services/groq.service.js';
 
 vi.mock('./_lib/services/quota.service.js', () => ({
   checkAndConsumeQuota: vi.fn(),
+  incrementErrorCounter: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('./_lib/services/groq.service.js', async (importOriginal) => {
   const actual = await importOriginal<typeof GroqService>();
   return { ...actual, callGroq: vi.fn() };
 });
 
-import { checkAndConsumeQuota } from './_lib/services/quota.service.js';
+import { checkAndConsumeQuota, incrementErrorCounter } from './_lib/services/quota.service.js';
 import { callGroq } from './_lib/services/groq.service.js';
 import handler from './generate.js';
 
@@ -190,6 +191,25 @@ describe('handler', () => {
       expect(typeof parsed.ms).toBe('number');
       expect(logged).not.toContain('203.0.113.5');
       errorSpy.mockRestore();
+    });
+  });
+
+  describe('error-code counters', () => {
+    it('increments the matching error counter on rejection', async () => {
+      const res = makeRes();
+      await handler(makeReq({ method: 'GET' }), res);
+      expect(incrementErrorCounter).toHaveBeenCalledWith('METHOD_NOT_ALLOWED');
+    });
+
+    it('increments the matching error counter for a quota rejection', async () => {
+      vi.mocked(checkAndConsumeQuota).mockResolvedValue({
+        ok: false,
+        reason: 'RATE_LIMITED',
+        remaining: 0,
+      } as never);
+      const res = makeRes();
+      await handler(makeReq(), res);
+      expect(incrementErrorCounter).toHaveBeenCalledWith('RATE_LIMITED');
     });
   });
 });

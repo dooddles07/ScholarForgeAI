@@ -196,9 +196,12 @@ hit zero instead of only finding out when a request fails.
 
 ## Monitoring and escalation
 
-Aggregate counters only, no identifiers: daily global requests, and per-IP daily requests. That is
-the complete set `api/_lib/quota.ts` tracks — there are no exhaustion-event or per-error-code
-counters.
+Aggregate counters only, no identifiers: daily global requests, per-IP daily requests, per-minute
+burst requests, and now a per-error-code counter keyed `errors:<code>:<YYYY-MM-DD>` (via
+`incrementErrorCounter` in `api/_lib/services/quota.service.ts`), incremented on every rejection
+and failure path. Best-effort: a Redis failure while counting an error is swallowed rather than
+turned into a second failure. Read today via the Upstash console; a CLI reader is a reasonable
+future add-on, not built yet.
 
 | Situation                       | Response                                                                         |
 | ------------------------------- | -------------------------------------------------------------------------------- |

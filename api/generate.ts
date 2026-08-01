@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { isAllowedOrigin, clientIp, hashIp } from './_lib/http/security.js';
 import { logEvent } from './_lib/http/log.js';
-import { checkAndConsumeQuota } from './_lib/services/quota.service.js';
+import { checkAndConsumeQuota, incrementErrorCounter } from './_lib/services/quota.service.js';
 import { groundChat, groundItems } from './_lib/services/grounding.service.js';
 import { callGroq, ProviderError } from './_lib/services/groq.service.js';
 import { parseGenerateRequest } from './_lib/models/request.js';
@@ -47,6 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         ms: Date.now() - start,
       }),
     );
+    await incrementErrorCounter('INTERNAL_ERROR');
     if (!res.headersSent) res.status(500).json({ error: 'INTERNAL_ERROR' });
   }
 }
@@ -58,6 +59,7 @@ async function handleGenerate(
 ): Promise<void> {
   if (req.method !== 'POST') {
     logEvent('request_rejected', { code: 'METHOD_NOT_ALLOWED', ms: Date.now() - start });
+    await incrementErrorCounter('METHOD_NOT_ALLOWED');
     res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
     return;
   }
@@ -66,6 +68,7 @@ async function handleGenerate(
 
   if (!isAllowedOrigin(header(req.headers.origin))) {
     logEvent('request_rejected', { code: 'FORBIDDEN', ipHash, ms: Date.now() - start });
+    await incrementErrorCounter('FORBIDDEN');
     res.status(403).json({ error: 'FORBIDDEN' });
     return;
   }
@@ -73,6 +76,7 @@ async function handleGenerate(
   const parsed = parseGenerateRequest(req.body);
   if (!parsed.ok) {
     logEvent('request_rejected', { code: 'BAD_REQUEST', ipHash, ms: Date.now() - start });
+    await incrementErrorCounter('BAD_REQUEST');
     res.status(400).json({ error: 'BAD_REQUEST' });
     return;
   }
@@ -85,6 +89,7 @@ async function handleGenerate(
       kind: body.kind,
       ms: Date.now() - start,
     });
+    await incrementErrorCounter('TEXT_TOO_LARGE');
     res.status(413).json({ error: 'TEXT_TOO_LARGE' });
     return;
   }
@@ -98,6 +103,7 @@ async function handleGenerate(
       kind: body.kind,
       ms: Date.now() - start,
     });
+    await incrementErrorCounter(quota.reason);
     res.status(status).json({ error: quota.reason });
     return;
   }
@@ -110,6 +116,7 @@ async function handleGenerate(
       kind: body.kind,
       ms: Date.now() - start,
     });
+    await incrementErrorCounter('SERVICE_UNAVAILABLE');
     res.status(503).json({ error: 'SERVICE_UNAVAILABLE' });
     return;
   }
@@ -147,6 +154,7 @@ async function handleGenerate(
       kind: body.kind,
       ms: Date.now() - start,
     });
+    await incrementErrorCounter('PROVIDER_ERROR');
     res.status(mappedStatus).json({ error: 'PROVIDER_ERROR' });
   }
 }
