@@ -1,53 +1,12 @@
-export interface GroundedChunk {
-  id: string;
-  text: string;
-  /* Never shown to the model. Used only after the response comes back, to attach a real page
-     number to whatever chunkId the model cites — the citation never trusts a model-claimed page. */
-  pageStart: number;
-  pageEnd: number;
-}
-
-export type GenerateKind = 'questions' | 'cards' | 'chat';
-export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
-export type QuestionType = 'mcq' | 'trueFalse' | 'shortAnswer' | 'fillBlank';
-
-export interface GenerateRequestBody {
-  kind: GenerateKind;
-  chunks: GroundedChunk[];
-  count?: number;
-  question?: string;
-  /* questions only. Both optional: an absent value means no restriction, matching today's
-     behaviour exactly for any caller that doesn't send them. */
-  difficulty?: QuestionDifficulty;
-  types?: QuestionType[];
-}
-
-/* Nullable rather than optional: Groq's strict mode requires every property to appear in the
-   schema's `required` array, so the model returns an explicit null instead of omitting a key. */
-export interface RawQuestionItem {
-  type: QuestionType;
-  prompt: string;
-  options: string[] | null;
-  correctIndex: number | null;
-  correctAnswer: string | null;
-  explanation: string;
-  topic: string | null;
-  chunkId: string;
-  quote: string;
-}
-
-export interface RawCardItem {
-  front: string;
-  back: string;
-  topic: string | null;
-  chunkId: string;
-  quote: string;
-}
-
-export interface RawChatResult {
-  content: string;
-  citations: { chunkId: string; quote: string }[];
-}
+import type {
+  GenerateRequestBody,
+  GroundedChunk,
+  QuestionDifficulty,
+  QuestionType,
+  RawCardItem,
+  RawChatResult,
+  RawQuestionItem,
+} from '../models/request.js';
 
 /* Only the gpt-oss models support strict json_schema on Groq — llama-3.3-70b, llama-3.1-8b,
    qwen3.6 and compound all reject the request outright, verified against the live API. Structured
@@ -141,7 +100,7 @@ const DIFFICULTY_INSTRUCTIONS: Record<QuestionDifficulty, string> = {
   hard: 'Application level: the student should have to use the concept in a new situation, not just recall or explain it.',
 };
 
-function promptFor(body: GenerateRequestBody): { prompt: string; schema: object } {
+export function promptFor(body: GenerateRequestBody): { prompt: string; schema: object } {
   const passages = passagesBlock(body.chunks);
 
   if (body.kind === 'questions') {

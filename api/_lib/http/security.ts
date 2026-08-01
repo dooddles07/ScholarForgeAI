@@ -1,5 +1,5 @@
 /* Origin check and IP hashing. Both are cheap, low-bar deterrents against casual scripted abuse,
-   not a security boundary against a determined attacker — see RATE-LIMITING-AND-ABUSE.md. */
+   not a security boundary against a determined attacker — see docs/SECURITY.md. */
 
 export function isAllowedOrigin(origin: string | undefined): boolean {
   const allowed = process.env.ALLOWED_ORIGIN;

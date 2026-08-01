@@ -110,12 +110,13 @@ One shared API key on a free tier behind an open endpoint. Two goals that pull a
 stop one user consuming everyone's quota, and never make a legitimate student feel suspected. The
 second rules out CAPTCHAs, sign-in walls, and anything treating the user as a probable attacker.
 
-Five layers, applied cheapest first:
+Six layers, applied cheapest first:
 
 | Layer                | Blocks                                    | Cost                   |
 | -------------------- | ----------------------------------------- | ---------------------- |
 | Origin check         | Casual scripted use from elsewhere        | Free, no state         |
 | Kill switch          | Everything, in an emergency               | One Upstash read       |
+| Per-minute burst limit | A tight request loop                    | One Upstash read/write |
 | Per-IP daily limit   | One user draining the pool                | One Upstash read/write |
 | Global daily ceiling | The project exceeding the provider's tier | One Upstash read/write |
 | Request size limit   | Oversized requests burning tokens         | Free                   |
@@ -128,6 +129,12 @@ skipped entirely**, so it must be set in production.
 **Kill switch.** An Upstash Redis flag checked on every request; when set, generation returns
 `SERVICE_DISABLED`. Exists so a problem can be stopped in seconds without a deployment. There is no
 bypass.
+
+**Per-minute burst limit.** Counters keyed `burst:<sha256(ip + salt)>:<YYYY-MM-DDTHH:MM>` (per-IP)
+and `burst:global:<YYYY-MM-DDTHH:MM>`, TTL 90 seconds. Checked before the daily counters, so a
+request that fails it never burns the day's allowance. Kept as a separate error code
+(`RATE_LIMITED`) from the daily `QUOTA_EXCEEDED`, so a transient 60-second throttle doesn't show
+the "come back tomorrow" quota message. Defaults `BURST_IP_LIMIT=10`, `BURST_GLOBAL_LIMIT=60`.
 
 **Per-IP daily limit.** A counter keyed `ip:<sha256(ip + salt)>:<YYYY-MM-DD>`, TTL 48 hours. The IP
 is hashed with a server-only salt rather than stored, and the key expires automatically — we never

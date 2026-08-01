@@ -1,4 +1,4 @@
-import type { GroundedChunk, RawCardItem, RawChatResult, RawQuestionItem } from './groq.js';
+import type { GroundedChunk, RawCardItem, RawChatResult, RawQuestionItem } from '../models/request.js';
 
 /* The model is trusted to write good prose, never to invent a source: every returned item is
    dropped unless its chunkId matches one we actually sent, and the page numbers in the final

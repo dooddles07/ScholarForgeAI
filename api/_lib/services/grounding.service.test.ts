@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { GroundedChunk, RawCardItem, RawChatResult, RawQuestionItem } from './groq.js';
-import { groundChat, groundItems, groundedCitation } from './grounding.js';
+import type { GroundedChunk, RawCardItem, RawChatResult, RawQuestionItem } from '../models/request.js';
+import { groundChat, groundItems, groundedCitation } from './grounding.service.js';
 
 const chunks: GroundedChunk[] = [
   { id: 'c1', text: 'Mitochondria produce ATP.', pageStart: 4, pageEnd: 4 },

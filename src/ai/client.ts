@@ -45,6 +45,8 @@ const FAILURE_CODES = [
   'SERVICE_UNAVAILABLE',
   'PROVIDER_ERROR',
   'TEXT_TOO_LARGE',
+  'INTERNAL_ERROR',
+  'RATE_LIMITED',
 ] as const;
 
 function mockFailure(): void {

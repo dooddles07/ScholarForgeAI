@@ -15,7 +15,7 @@ describe('isAllowedOrigin', () => {
     expect(isAllowedOrigin(undefined)).toBe(false);
   });
 
-  /* Deliberate, and the reason DEPLOYMENT.md insists the variable is set in production: unset
+  /* Deliberate, and the reason docs/SECURITY.md insists the variable is set in production: unset
      means every origin passes. */
   it('skips the check entirely when unconfigured', () => {
     delete process.env.ALLOWED_ORIGIN;

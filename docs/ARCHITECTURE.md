@@ -178,8 +178,12 @@ Body: { kind, chunks, count?, question?, difficulty?, types? }
 ```
 
 Errors are codes, never prose: `METHOD_NOT_ALLOWED`, `FORBIDDEN`, `BAD_REQUEST`, `TEXT_TOO_LARGE`,
-`QUOTA_EXCEEDED`, `SERVICE_DISABLED`, `SERVICE_UNAVAILABLE`, `PROVIDER_ERROR`. The client maps them
-to user copy; quota codes get the honest quota message, everything else gets the generic one.
+`QUOTA_EXCEEDED`, `RATE_LIMITED`, `SERVICE_DISABLED`, `SERVICE_UNAVAILABLE`, `PROVIDER_ERROR`,
+`INTERNAL_ERROR`.
+The client maps them to user copy; quota codes get the honest quota message, everything else gets
+the generic one. `INTERNAL_ERROR` (500) is a top-level catch-all around the whole handler, distinct
+from `SERVICE_UNAVAILABLE` (503, a known dependency is down) so error-rate monitoring can tell
+"Upstash is down" apart from "we shipped a bug".
 
 Every kind requests a strict JSON schema via Groq's `response_format: json_schema`. This is the
 single most valuable property of the provider choice: the model returns parseable JSON conforming to
